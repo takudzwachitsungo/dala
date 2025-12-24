@@ -62,7 +62,7 @@ class ConversationService:
                 cached_context = await self._build_context(db, user_id, conversation_id)
             
             # Add username to context
-            cached_context["user_name"] = user.nickname or "friend"
+            cached_context["user_name"] = user.username or "friend"
             
             # Get recent messages for context
             result = await db.execute(

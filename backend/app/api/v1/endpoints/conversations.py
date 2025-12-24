@@ -66,14 +66,21 @@ async def list_conversations(
     
     response = []
     for conv in conversations:
-        # Get message count and last message
-        msg_result = await db.execute(
-            select(func.count(Message.id), Message.content)
+        # Get message count
+        count_result = await db.execute(
+            select(func.count(Message.id))
+            .where(Message.conversation_id == conv.id)
+        )
+        message_count = count_result.scalar() or 0
+        
+        # Get last message
+        last_msg_result = await db.execute(
+            select(Message.content)
             .where(Message.conversation_id == conv.id)
             .order_by(desc(Message.created_at))
             .limit(1)
         )
-        msg_data = msg_result.first()
+        last_message = last_msg_result.scalar_one_or_none()
         
         response.append(ConversationResponse(
             id=conv.id,
@@ -81,8 +88,8 @@ async def list_conversations(
             title=conv.title,
             started_at=conv.started_at,
             is_active=conv.is_active,
-            message_count=msg_data[0] if msg_data else 0,
-            last_message=msg_data[1] if msg_data and len(msg_data) > 1 else None
+            message_count=message_count,
+            last_message=last_message
         ))
     
     return response

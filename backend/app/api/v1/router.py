@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     auth, conversations, mood, profile, websocket,
     circles, posts, paths, resources, admin,
-    admin_circles, admin_paths
+    admin_circles, admin_paths, safety_plan, verses
 )
 
 
@@ -16,6 +16,8 @@ api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(conversations.router, prefix="/conversations", tags=["Conversations"])
 api_router.include_router(mood.router, prefix="/mood", tags=["Mood Tracking"])
 api_router.include_router(profile.router, prefix="/profile", tags=["Profile"])
+api_router.include_router(safety_plan.router, prefix="/safety-plan", tags=["Safety Plan"])
+api_router.include_router(verses.router, prefix="/verses", tags=["Verses"])
 api_router.include_router(websocket.router, tags=["WebSocket"])
 
 # Phase 2: Community & Guided Paths

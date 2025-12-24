@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, ShieldAlert, Activity, MessageCircle, HeartPulse, BarChart3, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, ShieldAlert, Activity, MessageCircle, HeartPulse, BarChart3, LogOut, Menu, X, BookOpen } from 'lucide-react';
 interface AdminLayoutProps {
   children: React.ReactNode;
   activePage: string;
@@ -34,6 +34,10 @@ export function AdminLayout({
     id: 'circles',
     label: 'Circle Management',
     icon: MessageCircle
+  }, {
+    id: 'paths',
+    label: 'Path Management',
+    icon: BookOpen
   }, {
     id: 'safety',
     label: 'Safety & Crisis',

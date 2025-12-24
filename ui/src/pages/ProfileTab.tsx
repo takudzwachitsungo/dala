@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Settings, Award, Calendar, ShieldAlert, LogOut } from 'lucide-react';
 import { apiClient } from '../api/client';
+import { SafetyPlanModal } from '../components/SafetyPlanModal';
 
 interface ProfileTabProps {
   onLogout?: () => void;
@@ -28,6 +29,7 @@ export function ProfileTab({ onLogout }: ProfileTabProps) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [moodHistory, setMoodHistory] = useState<MoodHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSafetyPlan, setShowSafetyPlan] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -40,6 +42,8 @@ export function ProfileTab({ onLogout }: ProfileTabProps) {
       console.log('Profile data received:', data);
       console.log('Username from data:', data.username);
       console.log('Full data keys:', Object.keys(data));
+      console.log('is_admin value:', data.is_admin);
+      console.log('role value:', data.role);
       setProfile(data);
     } catch (error) {
       console.error('Failed to load profile:', error);
@@ -144,7 +148,10 @@ export function ProfileTab({ onLogout }: ProfileTabProps) {
           A private space for your coping strategies and emergency contacts.
           Only you can see this.
         </p>
-        <button className="text-xs font-medium text-red-600 bg-white border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors">
+        <button 
+          onClick={() => setShowSafetyPlan(true)}
+          className="text-xs font-medium text-red-600 bg-white border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors"
+        >
           View Plan
         </button>
       </div>
@@ -191,5 +198,11 @@ export function ProfileTab({ onLogout }: ProfileTabProps) {
           })}
         </div>
       </div>
+
+      {/* Safety Plan Modal */}
+      <SafetyPlanModal 
+        isOpen={showSafetyPlan} 
+        onClose={() => setShowSafetyPlan(false)} 
+      />
     </div>;
 }

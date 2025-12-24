@@ -32,11 +32,18 @@ export function SignupPage({
     setIsLoading(true);
 
     try {
-      await apiClient.register(nickname, password, consentGiven, email || undefined);
+      // Register with correct parameter order: username, email, password
+      await apiClient.register(nickname, email || '', password);
       onNavigate('app');
     } catch (err: any) {
       console.error('Signup failed:', err);
-      setError(err.response?.data?.detail || 'Signup failed. Please try again.');
+      // Handle Pydantic validation errors (array of objects) or string errors
+      const detail = err.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        setError(detail.map(e => e.msg).join(', '));
+      } else {
+        setError(detail || 'Signup failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -49,6 +49,7 @@ class User(Base):
     conversations = relationship("Conversation", back_populates="user", cascade="all, delete-orphan")
     mood_entries = relationship("MoodEntry", back_populates="user", cascade="all, delete-orphan")
     milestones = relationship("UserMilestone", back_populates="user", cascade="all, delete-orphan")
+    safety_plan = relationship("SafetyPlan", back_populates="user", uselist=False, cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<User {self.username} (anonymous={self.is_anonymous})>"

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, String
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
 from uuid import UUID
@@ -152,7 +152,7 @@ async def get_analytics(
     total_moods = total_moods_result.scalar()
     
     avg_mood_result = await db.execute(
-        select(func.avg(MoodEntry.mood_rating)).where(
+        select(func.avg(MoodEntry.mood_score)).where(
             MoodEntry.created_at >= week_ago
         )
     )
@@ -191,6 +191,57 @@ async def get_analytics(
 
 
 # Phase 3: User Management & Risk Assessment
+
+@router.get("/users")
+async def list_all_users(
+    search: str = None,
+    skip: int = 0,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(verify_admin)
+):
+    """List all users with optional search"""
+    query = select(User)
+    
+    if search:
+        query = query.where(
+            (User.username.ilike(f"%{search}%")) | 
+            (User.id.cast(String).ilike(f"%{search}%"))
+        )
+    
+    query = query.order_by(User.created_at.desc()).offset(skip).limit(limit)
+    
+    result = await db.execute(query)
+    users = result.scalars().all()
+    
+    # Get flag counts for each user
+    from app.db.models.post import Post
+    user_data = []
+    for user in users:
+        # Count flagged posts by this user
+        flag_result = await db.execute(
+            select(func.count(Post.id))
+            .where(Post.user_id == user.id, Post.is_flagged == True)
+        )
+        flag_count = flag_result.scalar() or 0
+        
+        user_data.append({
+            "id": str(user.id),
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+            "is_active": user.is_active,
+            "is_admin": user.is_admin,
+            "is_moderator": user.is_moderator,
+            "is_anonymous": user.is_anonymous,
+            "risk_level": user.risk_level,
+            "escalation_status": user.escalation_status,
+            "created_at": user.created_at.isoformat(),
+            "flag_count": flag_count
+        })
+    
+    return user_data
+
 
 @router.get("/users/at-risk")
 async def get_at_risk_users(
@@ -283,62 +334,201 @@ async def get_moderation_summary(
 ):
     """Get summary of moderation queue"""
     # Flagged posts by severity
-    critical_posts = await db.execute(
+    critical_result = await db.execute(
         select(func.count(Post.id)).where(
             Post.is_flagged == True,
             Post.flag_severity == 'critical'
         )
     )
-    high_posts = await db.execute(
+    critical_count = critical_result.scalar() or 0
+    
+    high_result = await db.execute(
         select(func.count(Post.id)).where(
             Post.is_flagged == True,
             Post.flag_severity == 'high'
         )
     )
-    medium_posts = await db.execute(
+    high_count = high_result.scalar() or 0
+    
+    medium_result = await db.execute(
         select(func.count(Post.id)).where(
             Post.is_flagged == True,
             Post.flag_severity == 'medium'
         )
     )
-    low_posts = await db.execute(
+    medium_count = medium_result.scalar() or 0
+    
+    low_result = await db.execute(
         select(func.count(Post.id)).where(
             Post.is_flagged == True,
             Post.flag_severity == 'low'
         )
     )
+    low_count = low_result.scalar() or 0
     
     # At-risk users
-    high_risk_users = await db.execute(
+    high_risk_result = await db.execute(
         select(func.count(User.id)).where(User.risk_level == 'high')
     )
-    critical_risk_users = await db.execute(
+    high_risk_count = high_risk_result.scalar() or 0
+    
+    critical_risk_result = await db.execute(
         select(func.count(User.id)).where(User.risk_level == 'critical')
     )
+    critical_risk_count = critical_risk_result.scalar() or 0
     
     # Pending escalations
-    pending_escalations = await db.execute(
+    pending_result = await db.execute(
         select(func.count(User.id)).where(User.escalation_status == 'pending')
     )
+    pending_count = pending_result.scalar() or 0
+    
+    # Calculate stats for SystemMonitoring page
+    total_flagged = critical_count + high_count + medium_count + low_count
     
     return {
+        "total_flagged_posts": total_flagged,
+        "pending_review": total_flagged,  # Assuming all flagged posts need review
+        "actioned_today": 0,  # Would need to track this in the database
+        "high_severity_count": critical_count + high_count,
         "flagged_posts": {
-            "critical": critical_posts.scalar() or 0,
-            "high": high_posts.scalar() or 0,
-            "medium": medium_posts.scalar() or 0,
-            "low": low_posts.scalar() or 0,
-            "total": sum([
-                critical_posts.scalar() or 0,
-                high_posts.scalar() or 0,
-                medium_posts.scalar() or 0,
-                low_posts.scalar() or 0
-            ])
+            "critical": critical_count,
+            "high": high_count,
+            "medium": medium_count,
+            "low": low_count,
+            "total": total_flagged
         },
         "at_risk_users": {
-            "high": high_risk_users.scalar() or 0,
-            "critical": critical_risk_users.scalar() or 0,
-            "total": (high_risk_users.scalar() or 0) + (critical_risk_users.scalar() or 0)
+            "high": high_risk_count,
+            "critical": critical_risk_count,
+            "total": high_risk_count + critical_risk_count
         },
-        "pending_escalations": pending_escalations.scalar() or 0
+        "pending_escalations": pending_count
     }
 
+
+# Phase 4: Path Management
+
+@router.get("/paths")
+async def list_all_paths(
+    skip: int = 0,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(verify_admin)
+):
+    """List all paths for admin management"""
+    result = await db.execute(
+        select(Path)
+        .order_by(Path.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    paths = result.scalars().all()
+    
+    return [
+        {
+            "id": str(path.id),
+            "name": path.name,
+            "category": path.category,
+            "difficulty": path.difficulty,
+            "step_count": path.step_count,
+            "enrollment_count": path.enrollment_count,
+            "estimated_duration": path.estimated_duration,
+            "is_published": path.is_published,
+            "created_at": path.created_at.isoformat()
+        }
+        for path in paths
+    ]
+
+
+@router.post("/paths")
+async def create_path(
+    path_data: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(verify_admin)
+):
+    """Create a new path"""
+    new_path = Path(
+        name=path_data["name"],
+        category=path_data["category"],
+        difficulty=path_data.get("difficulty", "beginner"),
+        description=path_data.get("description", ""),
+        estimated_duration=path_data.get("estimated_duration"),
+        step_count=0,
+        enrollment_count=0,
+        is_published=path_data.get("is_published", False)
+    )
+    
+    db.add(new_path)
+    await db.commit()
+    await db.refresh(new_path)
+    
+    return {
+        "id": str(new_path.id),
+        "name": new_path.name,
+        "category": new_path.category,
+        "difficulty": new_path.difficulty,
+        "step_count": new_path.step_count,
+        "enrollment_count": new_path.enrollment_count,
+        "is_published": new_path.is_published,
+        "created_at": new_path.created_at.isoformat()
+    }
+
+
+@router.patch("/paths/{path_id}")
+async def update_path(
+    path_id: UUID,
+    path_data: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(verify_admin)
+):
+    """Update a path"""
+    result = await db.execute(select(Path).where(Path.id == path_id))
+    path = result.scalar_one_or_none()
+    
+    if not path:
+        raise HTTPException(status_code=404, detail="Path not found")
+    
+    if "name" in path_data:
+        path.name = path_data["name"]
+    if "category" in path_data:
+        path.category = path_data["category"]
+    if "difficulty" in path_data:
+        path.difficulty = path_data["difficulty"]
+    if "description" in path_data:
+        path.description = path_data["description"]
+    if "estimated_duration" in path_data:
+        path.estimated_duration = path_data["estimated_duration"]
+    if "is_published" in path_data:
+        path.is_published = path_data["is_published"]
+    
+    await db.commit()
+    await db.refresh(path)
+    
+    return {
+        "id": str(path.id),
+        "name": path.name,
+        "category": path.category,
+        "difficulty": path.difficulty,
+        "is_published": path.is_published,
+        "updated_at": datetime.utcnow().isoformat()
+    }
+
+
+@router.delete("/paths/{path_id}")
+async def delete_path(
+    path_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(verify_admin)
+):
+    """Delete a path"""
+    result = await db.execute(select(Path).where(Path.id == path_id))
+    path = result.scalar_one_or_none()
+    
+    if not path:
+        raise HTTPException(status_code=404, detail="Path not found")
+    
+    await db.delete(path)
+    await db.commit()
+    
+    return {"message": "Path deleted successfully"}

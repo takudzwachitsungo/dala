@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from app.core.config import settings
 from app.db.base import Base
 from app.db.models import User, Conversation, Message, MoodEntry, UserMilestone
+from app.db.models.safety_plan import SafetyPlan
 
 # this is the Alembic Config object
 config = context.config

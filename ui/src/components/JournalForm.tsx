@@ -34,13 +34,12 @@ export const JournalForm = forwardRef<{ focus: () => void }, JournalFormProps>((
           onBlur={() => setIsFocused(false)}
           placeholder="How are you feeling right now?"
           className="w-full bg-transparent text-primary text-lg leading-relaxed placeholder-subtle resize-none focus:outline-none py-6 px-4 min-h-[160px]"
-          animate={{
-        borderBottomColor: isFocused ? '#A3B18A' : 'transparent',
-        borderBottomWidth: isFocused ? 1 : 0
-      }}
+          style={{
+            borderBottom: isFocused ? '1px solid #A3B18A' : '0px solid transparent'
+          }}
           transition={{
-        duration: 0.5
-      }} />
+            duration: 0.5
+          }} />
 
         {/* Subtle underline when not focused to show area exists, optional based on "no border at rest" */}
         {!isFocused && text.length === 0 && <div className="absolute bottom-0 left-0 right-0 h-px bg-transparent" />}

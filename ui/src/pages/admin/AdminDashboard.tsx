@@ -29,9 +29,11 @@ export function AdminDashboard({
 }: AdminDashboardProps) {
   const [summary, setSummary] = useState<ModerationSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recentFlags, setRecentFlags] = useState<any[]>([]);
 
   useEffect(() => {
     loadSummary();
+    loadRecentFlags();
   }, []);
 
   const loadSummary = async () => {
@@ -42,6 +44,15 @@ export function AdminDashboard({
       console.error('Failed to load moderation summary:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRecentFlags = async () => {
+    try {
+      const data = await apiClient.adminGetFlaggedPosts(undefined, 0, 5);
+      setRecentFlags(data.posts || []);
+    } catch (error) {
+      console.error('Failed to load recent flags:', error);
     }
   };
 
@@ -162,17 +173,29 @@ export function AdminDashboard({
           </div>
 
           <div className="space-y-4">
-            {recentFlags.map(flag => <div key={flag.id} className="flex items-start space-x-3 p-3 rounded-xl hover:bg-background transition-colors">
-                <div className={`w-2 h-2 rounded-full mt-2 ${flag.severity === 'high' ? 'bg-red-500' : flag.severity === 'medium' ? 'bg-orange-500' : 'bg-yellow-500'}`} />
-                <div>
-                  <p className="text-sm font-medium text-primary">
-                    {flag.reason}
-                  </p>
-                  <p className="text-xs text-secondary">
-                    by {flag.author} • {flag.time}
-                  </p>
-                </div>
-              </div>)}
+            {recentFlags.length === 0 ? (
+              <div className="text-center py-6 text-secondary text-sm">
+                No flagged content
+              </div>
+            ) : (
+              recentFlags.map(flag => <div key={flag.id} className="flex items-start space-x-3 p-3 rounded-xl hover:bg-background transition-colors">
+                  <div className={`w-2 h-2 rounded-full mt-2 ${
+                    flag.severity === 'critical' || flag.severity === 'high' 
+                      ? 'bg-red-500' 
+                      : flag.severity === 'medium' 
+                        ? 'bg-orange-500' 
+                        : 'bg-yellow-500'
+                  }`} />
+                  <div>
+                    <p className="text-sm font-medium text-primary">
+                      {flag.flag_reason || 'Flagged content'}
+                    </p>
+                    <p className="text-xs text-secondary">
+                      {new Date(flag.flagged_at || flag.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>)
+            )}
           </div>
         </div>
       </div>

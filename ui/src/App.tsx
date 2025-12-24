@@ -12,6 +12,7 @@ import { UserManagement } from './pages/admin/UserManagement';
 import { ContentModeration } from './pages/admin/ContentModeration';
 import { SystemMonitoring } from './pages/admin/SystemMonitoring';
 import { CircleManagement } from './pages/admin/CircleManagement';
+import { PathManagement } from './pages/admin/PathManagement';
 import { SafetyManagement } from './pages/admin/SafetyManagement';
 import { Analytics } from './pages/admin/Analytics';
 import { WelcomePage } from './pages/auth/WelcomePage';
@@ -20,14 +21,38 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { apiClient } from './api/client';
 
 export function App() {
-  const [activeTab, setActiveTab] = useState<TabId>('home');
-  const [isAdminMode, setIsAdminMode] = useState(false);
-  const [adminPage, setAdminPage] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState<TabId>(() => {
+    const saved = localStorage.getItem('activeTab');
+    return (saved as TabId) || 'home';
+  });
+  const [isAdminMode, setIsAdminMode] = useState(() => {
+    const saved = localStorage.getItem('isAdminMode');
+    return saved === 'true';
+  });
+  const [adminPage, setAdminPage] = useState(() => {
+    const saved = localStorage.getItem('adminPage');
+    return saved || 'dashboard';
+  });
   // Auth State
   const [authMode, setAuthMode] = useState<'welcome' | 'signup' | 'login' | 'app'>('welcome');
   const [isInitializing, setIsInitializing] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [username, setUsername] = useState<string>('');
+
+  // Persist active tab to localStorage
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
+
+  // Persist admin mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('isAdminMode', isAdminMode.toString());
+  }, [isAdminMode]);
+
+  // Persist admin page to localStorage
+  useEffect(() => {
+    localStorage.setItem('adminPage', adminPage);
+  }, [adminPage]);
 
   // Check if user has existing token on app start
   useEffect(() => {
@@ -39,6 +64,9 @@ export function App() {
           try {
             const profile = await apiClient.getProfile();
             console.log('Valid session found');
+            console.log('Profile is_admin:', profile.is_admin);
+            console.log('Profile role:', profile.role);
+            console.log('Setting isAdmin to:', profile.is_admin || false);
             setIsAdmin(profile.is_admin || false);
             setUsername(profile.username || '');
             setAuthMode('app');
@@ -115,6 +143,8 @@ export function App() {
         return <SystemMonitoring />;
       case 'circles':
         return <CircleManagement />;
+      case 'paths':
+        return <PathManagement />;
       case 'safety':
         return <SafetyManagement />;
       case 'analytics':

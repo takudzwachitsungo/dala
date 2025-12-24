@@ -98,30 +98,29 @@ def detect_crisis_level(text: str, sentiment_score: float) -> Dict:
     high_risk_keywords = [
         "suicide", "kill myself", "end it all", "no reason to live",
         "want to die", "better off dead", "can't go on",
-        "self harm", "hurt myself", "cut myself"
+        "self harm", "hurt myself", "cut myself", "end my life",
+        "planning to die", "going to kill"
     ]
     
     moderate_risk_keywords = [
-        "hopeless", "worthless", "give up", "can't take it",
-        "overwhelming", "unbearable", "too much", "breaking point"
+        "suicidal", "self-harm", "self harm", "want to hurt",
+        "no point in living", "wish i was dead"
     ]
     
     # Check for keywords
     high_keywords_found = [kw for kw in high_risk_keywords if kw in text_lower]
     moderate_keywords_found = [kw for kw in moderate_risk_keywords if kw in text_lower]
     
-    # Determine crisis level
-    if high_keywords_found or sentiment_score < -0.7:
+    # Determine crisis level - MUCH more conservative
+    if high_keywords_found or (sentiment_score < -0.85 and len(text.split()) > 10):
         crisis_level = "HIGH"
         needs_intervention = True
-    elif moderate_keywords_found or sentiment_score < -0.4:
+    elif moderate_keywords_found or (sentiment_score < -0.75 and any(word in text_lower for word in ["suicide", "harm", "die"])):
         crisis_level = "MODERATE"
         needs_intervention = True
-    elif sentiment_score < -0.2:
-        crisis_level = "LOW"
-        needs_intervention = False
     else:
-        crisis_level = "NONE"
+        # Just feeling low/sad/tired is NOT a crisis
+        crisis_level = "LOW" if sentiment_score < -0.5 else "NONE"
         needs_intervention = False
     
     return {
@@ -133,24 +132,24 @@ def detect_crisis_level(text: str, sentiment_score: float) -> Dict:
 
 
 def get_crisis_resources() -> List[Dict]:
-    """Get crisis support resources"""
+    """Get crisis support resources for Zimbabwe"""
     return [
         {
             "type": "hotline",
-            "name": "988 Suicide & Crisis Lifeline",
-            "contact": "988",
-            "description": "24/7 crisis support"
+            "name": "Childline Zimbabwe",
+            "contact": "116 (toll-free)",
+            "description": "24/7 crisis support for children and youth"
         },
         {
-            "type": "text",
-            "name": "Crisis Text Line",
-            "contact": "Text HOME to 741741",
-            "description": "Text-based crisis support"
+            "type": "hotline",
+            "name": "Befrienders Zimbabwe",
+            "contact": "+263 9 65000 / +263 77 220 0040",
+            "description": "Emotional support and suicide prevention"
         },
         {
-            "type": "emergency",
+            "type": "medical",
             "name": "Emergency Services",
-            "contact": "911",
-            "description": "Immediate emergency assistance"
+            "contact": "999 or 112",
+            "description": "Police, ambulance, fire services"
         }
     ]

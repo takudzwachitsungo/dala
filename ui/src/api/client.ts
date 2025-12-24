@@ -131,6 +131,23 @@ class ApiClient {
     return response.data;
   }
 
+  // Safety Plan
+  async getSafetyPlan() {
+    const response = await this.client.get('/safety-plan');
+    return response.data;
+  }
+
+  async updateSafetyPlan(data: any) {
+    const response = await this.client.put('/safety-plan', data);
+    return response.data;
+  }
+
+  // Verses
+  async getDailyVerse(mood: string) {
+    const response = await this.client.get(`/verses/daily-verse?mood=${mood}`);
+    return response.data;
+  }
+
   // Conversations
   async createConversation(mode: 'listen' | 'reflect' | 'ground', title?: string) {
     const response = await this.client.post('/conversations', {
@@ -320,6 +337,118 @@ class ApiClient {
     const response = await this.client.get('/admin/analytics');
     return response.data;
   }
+
+  // ============================================
+  // PHASE 3: Admin & Moderation APIs
+  // ============================================
+
+  // Admin - Circle Management
+  async adminCreateCircle(circleData: { name: string; topic: string; description: string; icon?: string }) {
+    const response = await this.client.post('/admin/circles', circleData);
+    return response.data;
+  }
+
+  async adminUpdateCircle(circleId: string, circleData: { name: string; topic: string; description: string; icon?: string }) {
+    const response = await this.client.patch(`/admin/circles/${circleId}`, circleData);
+    return response.data;
+  }
+
+  async adminDeleteCircle(circleId: string) {
+    await this.client.delete(`/admin/circles/${circleId}`);
+  }
+
+  async adminGetCircleStats() {
+    const response = await this.client.get('/admin/circles/stats');
+    return response.data;
+  }
+
+  // Admin - Path Management
+  async adminGetPaths(skip: number = 0, limit: number = 50) {
+    const response = await this.client.get('/admin/paths', {
+      params: { skip, limit }
+    });
+    return response.data;
+  }
+
+  async adminCreatePath(pathData: any) {
+    const response = await this.client.post('/admin/paths', pathData);
+    return response.data;
+  }
+
+  async adminUpdatePath(pathId: string, pathData: any) {
+    const response = await this.client.patch(`/admin/paths/${pathId}`, pathData);
+    return response.data;
+  }
+
+  async adminDeletePath(pathId: string) {
+    await this.client.delete(`/admin/paths/${pathId}`);
+  }
+
+  async adminTogglePathPublish(pathId: string, isPublished: boolean) {
+    const response = await this.client.patch(`/admin/paths/${pathId}`, { is_published: isPublished });
+    return response.data;
+  }
+
+  // Admin - User Management
+  async adminGetUsers(search?: string, skip: number = 0, limit: number = 50) {
+    const response = await this.client.get('/admin/users', {
+      params: { search, skip, limit }
+    });
+    return response.data;
+  }
+
+  async adminGetAtRiskUsers(riskLevel: string = 'high', skip: number = 0, limit: number = 50) {
+    const response = await this.client.get('/admin/users/at-risk', {
+      params: { risk_level: riskLevel, skip, limit }
+    });
+    return response.data;
+  }
+
+  async adminUpdateUserRole(userId: string, role: string) {
+    const response = await this.client.patch(`/admin/users/${userId}/role`, { role });
+    return response.data;
+  }
+
+  async adminUpdateEscalationStatus(userId: string, status: string, notes?: string) {
+    const response = await this.client.patch(`/admin/users/${userId}/escalation`, {
+      status_update: status,
+      notes
+    });
+    return response.data;
+  }
+
+  // Admin - Moderation Summary
+  async adminGetModerationSummary() {
+    const response = await this.client.get('/admin/moderation/summary');
+    return response.data;
+  }
+
+  async adminGetAnalytics() {
+    const response = await this.client.get('/admin/analytics');
+    return response.data;
+  }
+
+  async adminGetFlaggedPosts(severity?: string, skip: number = 0, limit: number = 50) {
+    const params: any = { skip, limit };
+    if (severity) params.severity = severity;
+    
+    const response = await this.client.get('/admin/posts/flagged', { params });
+    return response.data;
+  }
+
+  async adminTogglePostHidden(postId: number) {
+    const response = await this.client.patch(`/admin/posts/${postId}/hide`);
+    return response.data;
+  }
+
+  async adminDeletePost(postId: number) {
+    await this.client.delete(`/admin/posts/${postId}`);
+  }
+
+  async adminGetPostFlags(postId: number) {
+    const response = await this.client.get(`/admin/posts/${postId}/flags`);
+    return response.data;
+  }
 }
 
 // WebSocket connection for real-time chat
@@ -400,85 +529,6 @@ export class ChatWebSocket {
 
   isConnected(): boolean {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
-  }
-
-  // ============================================
-  // PHASE 3: Admin & Moderation APIs
-  // ============================================
-
-  // Admin - Circle Management
-  async adminCreateCircle(circleData: { name: string; topic: string; description: string; icon?: string }) {
-    const response = await this.client.post('/admin/circles', circleData);
-    return response.data;
-  }
-
-  async adminUpdateCircle(circleId: string, circleData: { name: string; topic: string; description: string; icon?: string }) {
-    const response = await this.client.patch(`/admin/circles/${circleId}`, circleData);
-    return response.data;
-  }
-
-  async adminDeleteCircle(circleId: string) {
-    await this.client.delete(`/admin/circles/${circleId}`);
-  }
-
-  async adminGetCircleStats() {
-    const response = await this.client.get('/admin/circles/stats');
-    return response.data;
-  }
-
-  // Admin - Path Management
-  async adminCreatePath(pathData: any) {
-    const response = await this.client.post('/admin/paths', pathData);
-    return response.data;
-  }
-
-  async adminUpdatePath(pathId: string, pathData: any) {
-    const response = await this.client.patch(`/admin/paths/${pathId}`, pathData);
-    return response.data;
-  }
-
-  async adminDeletePath(pathId: string) {
-    await this.client.delete(`/admin/paths/${pathId}`);
-  }
-
-  async adminTogglePathPublish(pathId: string, isPublished: boolean) {
-    const response = await this.client.patch(`/admin/paths/${pathId}/publish`, { is_published: isPublished });
-    return response.data;
-  }
-
-  // Admin - User Management
-  async adminGetAtRiskUsers(riskLevel: string = 'high', skip: number = 0, limit: number = 50) {
-    const response = await this.client.get('/admin/users/at-risk', {
-      params: { risk_level: riskLevel, skip, limit }
-    });
-    return response.data;
-  }
-
-  async adminUpdateUserRole(userId: string, role: string) {
-    const response = await this.client.patch(`/admin/users/${userId}/role`, { role });
-    return response.data;
-  }
-
-  async adminUpdateEscalationStatus(userId: string, status: string, notes?: string) {
-    const response = await this.client.patch(`/admin/users/${userId}/escalation`, {
-      status_update: status,
-      notes
-    });
-    return response.data;
-  }
-
-  // Admin - Moderation Summary
-  async adminGetModerationSummary() {
-    const response = await this.client.get('/admin/moderation/summary');
-    return response.data;
-  }
-
-  async adminGetFlaggedPosts(severity?: string, skip: number = 0, limit: number = 50) {
-    const params: any = { skip, limit };
-    if (severity) params.severity = severity;
-    
-    const response = await this.client.get('/admin/posts/flagged', { params });
-    return response.data;
   }
 }
 

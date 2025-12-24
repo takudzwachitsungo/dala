@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, Sparkles, Shield, X } from 'lucide-react';
+import { Send, Mic, Sparkles, Shield, X, Ear, Brain, Heart } from 'lucide-react';
 import { apiClient, ChatWebSocket } from '../api/client';
 import { MarkdownText } from '../components/MarkdownText';
 
@@ -74,6 +74,8 @@ export function CompanionTab() {
         
         await ws.connect(
           (message) => {
+            console.log('WebSocket message received:', message); // Debug log
+            
             if (message.type === 'connected') {
               console.log('Connected to Dala:', message.message);
               setIsConnecting(false);
@@ -90,8 +92,8 @@ export function CompanionTab() {
                 }
                 return prev;
               });
-            } else if (message.type === 'done') {
-              // Complete the response
+            } else if (message.type === 'complete') {
+              // Complete message type from backend
               const finalText = currentResponseRef.current;
               currentResponseRef.current = '';
               setMessages(prev => {
@@ -99,7 +101,7 @@ export function CompanionTab() {
                 return [
                   ...filtered,
                   {
-                    id: message.message_id || Date.now().toString(),
+                    id: Date.now().toString(),
                     role: 'assistant',
                     text: finalText,
                     timestamp: new Date()
@@ -110,8 +112,10 @@ export function CompanionTab() {
             } else if (message.type === 'typing') {
               setIsTyping(message.status);
             } else if (message.type === 'error') {
-              console.error('WebSocket error:', message.message);
+              console.error('WebSocket error:', message.message || message.error || JSON.stringify(message));
               setIsTyping(false);
+            } else {
+              console.warn('Unknown message type:', message.type, message);
             }
           },
           (error) => {
@@ -179,11 +183,42 @@ export function CompanionTab() {
         </div>
 
         <div className="flex items-center space-x-2">
-          <select value={mode} onChange={e => setMode(e.target.value as any)} className="text-xs bg-secondary/10 text-primary border-none rounded-full px-3 py-1.5 focus:ring-1 focus:ring-sage outline-none">
-            <option value="listen">Just Listen</option>
-            <option value="reflect">Reflect</option>
-            <option value="ground">Ground Me</option>
-          </select>
+          {/* Mode Selector - Pill Buttons */}
+          <div className="flex items-center bg-white rounded-full p-1 shadow-sm border border-divider/50">
+            <button
+              onClick={() => setMode('listen')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                mode === 'listen'
+                  ? 'bg-sage text-white shadow-sm'
+                  : 'text-secondary hover:text-primary'
+              }`}
+            >
+              <Ear size={12} />
+              <span>Listen</span>
+            </button>
+            <button
+              onClick={() => setMode('reflect')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                mode === 'reflect'
+                  ? 'bg-sage text-white shadow-sm'
+                  : 'text-secondary hover:text-primary'
+              }`}
+            >
+              <Brain size={12} />
+              <span>Reflect</span>
+            </button>
+            <button
+              onClick={() => setMode('ground')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                mode === 'ground'
+                  ? 'bg-sage text-white shadow-sm'
+                  : 'text-secondary hover:text-primary'
+              }`}
+            >
+              <Heart size={12} />
+              <span>Ground</span>
+            </button>
+          </div>
         </div>
       </div>
 

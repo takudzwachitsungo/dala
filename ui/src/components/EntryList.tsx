@@ -52,7 +52,7 @@ export function EntryList({
                 </span>
               </div>
 
-              <p className="text-primary leading-relaxed whitespace-pre-wrap pl-5 border-l border-transparent group-hover:border-sage/20 transition-colors duration-500">
+              <p className="text-primary leading-relaxed whitespace-pre-wrap pl-5 border-l-2 border-sage/20 transition-colors duration-500">
                 {entry.text}
               </p>
             </div>
