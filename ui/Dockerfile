@@ -11,7 +11,10 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Build the app
+# Copy production environment file
+COPY .env.production .env.production
+
+# Build the app for production
 RUN npm run build
 
 # Production stage - serve with nginx
