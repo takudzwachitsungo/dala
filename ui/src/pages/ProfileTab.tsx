@@ -6,6 +6,7 @@ import { SafetyPlanModal } from '../components/SafetyPlanModal';
 
 interface ProfileTabProps {
   onLogout?: () => void;
+  isActive?: boolean;
 }
 
 interface ProfileData {
@@ -25,7 +26,7 @@ interface MoodHistoryEntry {
   created_at: string;
 }
 
-export function ProfileTab({ onLogout }: ProfileTabProps) {
+export function ProfileTab({ onLogout, isActive }: ProfileTabProps) {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [moodHistory, setMoodHistory] = useState<MoodHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,13 @@ export function ProfileTab({ onLogout }: ProfileTabProps) {
     loadProfile();
     loadMoodHistory();
   }, []);
+
+  // Reload mood history when tab becomes active
+  useEffect(() => {
+    if (isActive) {
+      loadMoodHistory();
+    }
+  }, [isActive]);
 
   const loadProfile = async () => {
     try {

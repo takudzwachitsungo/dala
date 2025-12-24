@@ -111,7 +111,7 @@ export function App() {
         return <CirclesTab />;
       case 'profile':
         return <div className="relative">
-            <ProfileTab onLogout={handleLogout} />
+            <ProfileTab onLogout={handleLogout} isActive={activeTab === 'profile'} />
             {/* Admin Toggle - Only visible for admin users */}
             {isAdmin && (
               <button onClick={() => setIsAdminMode(true)} className="fixed bottom-24 right-6 bg-primary text-white text-xs px-3 py-1 rounded-full opacity-50 hover:opacity-100 transition-opacity">
