@@ -8,9 +8,10 @@ from app.db.models.circle import Circle, CircleMembership
 from app.db.models.post import Post, PostReaction
 from app.db.models.path import Path, PathStep, UserPathProgress
 from app.db.models.resource import Resource
+from app.db.models.safety_plan import SafetyPlan
 
 __all__ = [
     "User", "Conversation", "Message", "MoodEntry", "UserMilestone",
     "Circle", "CircleMembership", "Post", "PostReaction",
-    "Path", "PathStep", "UserPathProgress", "Resource"
+    "Path", "PathStep", "UserPathProgress", "Resource", "SafetyPlan"
 ]
