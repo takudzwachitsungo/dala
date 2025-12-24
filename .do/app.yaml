@@ -1,7 +1,7 @@
 name: dala
 region: nyc
 
-# Database
+# Databases (PostgreSQL and Redis)
 databases:
   - name: dala-db
     engine: PG
@@ -9,9 +9,6 @@ databases:
     size: basic-xs
     num_nodes: 1
     production: true
-
-# Redis
-databases:
   - name: dala-redis
     engine: REDIS
     version: "7"
