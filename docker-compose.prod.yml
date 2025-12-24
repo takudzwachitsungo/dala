@@ -48,7 +48,6 @@ services:
       - ACCESS_TOKEN_EXPIRE_MINUTES=43200
       - GROQ_API_KEY=${GROQ_API_KEY}
       - MINIMAX_API_KEY=${MINIMAX_API_KEY:-}
-      - ALLOWED_ORIGINS=http://localhost,http://${DOMAIN:-localhost},https://${DOMAIN:-localhost}
     depends_on:
       postgres:
         condition: service_healthy

@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     MINIMAX_API_KEY: str = ""
     
     # CORS
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    ALLOWED_ORIGINS: List[str] = ["*"]
     
     # Rate Limiting
     RATE_LIMIT_REQUESTS: int = 100
