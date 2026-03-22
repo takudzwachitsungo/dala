@@ -5,10 +5,7 @@ import '../theme/app_theme.dart';
 import '../widgets/dala_scaffold.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({
-    super.key,
-    required this.controller,
-  });
+  const HomePage({super.key, required this.controller});
 
   final DalaAppController controller;
 
@@ -39,18 +36,31 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (widget.controller.isHomeLoading)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 18),
+                    child: LinearProgressIndicator(),
+                  ),
+                if (widget.controller.errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 18),
+                    child: _InfoBanner(
+                      message: widget.controller.errorMessage!,
+                      tone: _BannerTone.warning,
+                    ),
+                  ),
                 Text(
                   _greeting(user),
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Take a moment to arrive. You don\'t have to rush what your heart is trying to say.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppTheme.muted,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: AppTheme.muted),
                 ),
                 const SizedBox(height: 24),
                 _SectionCard(
@@ -59,16 +69,15 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Text(
                         'How are you feeling?',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'A quick check-in helps Dala tailor the tone and support.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.muted,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
                       ),
                       const SizedBox(height: 18),
                       Wrap(
@@ -79,8 +88,17 @@ class _HomePageState extends State<HomePage> {
                               mood.score == widget.controller.selectedMoodScore;
                           return ChoiceChip(
                             selected: isSelected,
-                            label: Text('${mood.emoji} ${mood.label}'),
-                            onSelected: (_) => widget.controller.selectMood(mood.score),
+                            avatar: Icon(
+                              _moodIcon(mood.score),
+                              size: 18,
+                              color: isSelected
+                                  ? AppTheme.sage
+                                  : AppTheme.muted,
+                            ),
+                            label: Text(mood.label),
+                            onSelected: (_) async {
+                              await widget.controller.selectMood(mood.score);
+                            },
                           );
                         }).toList(),
                       ),
@@ -95,33 +113,32 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Text(
                         'A word for this moment',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 14),
                       Text(
                         '"${verse.verse}"',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              height: 1.35,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         verse.reference,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.sage,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          color: AppTheme.sage,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Text(
                         verse.devotional,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.muted,
-                              height: 1.45,
-                            ),
+                          color: AppTheme.muted,
+                          height: 1.45,
+                        ),
                       ),
                     ],
                   ),
@@ -134,7 +151,8 @@ class _HomePageState extends State<HomePage> {
                         icon: Icons.chat_bubble_rounded,
                         title: 'Talk to Dala',
                         subtitle: 'Gentle conversation',
-                        onTap: () => widget.controller.selectTab(AppTab.companion),
+                        onTap: () =>
+                            widget.controller.selectTab(AppTab.companion),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -155,16 +173,15 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Text(
                         'Reflect',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Capture a thought before it slips away.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.muted,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
                       ),
                       const SizedBox(height: 14),
                       TextField(
@@ -179,8 +196,10 @@ class _HomePageState extends State<HomePage> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: FilledButton(
-                          onPressed: () {
-                            widget.controller.addReflection(_reflectionController.text);
+                          onPressed: () async {
+                            await widget.controller.addReflection(
+                              _reflectionController.text,
+                            );
                             _reflectionController.clear();
                           },
                           child: const Text('Save reflection'),
@@ -199,14 +218,13 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Text(
                             'Recent reflections',
-                            style:
-                                Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
                           ),
                           Text(
                             '${widget.controller.reflections.length} notes',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
                                   color: AppTheme.sage,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -214,7 +232,9 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      ...widget.controller.reflections.take(3).map(
+                      ...widget.controller.reflections
+                          .take(3)
+                          .map(
                             (entry) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Container(
@@ -249,6 +269,12 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 18),
+                const _InfoBanner(
+                  message:
+                      'This screen is live-backed now. Mood check-ins, reflections, profile stats, and verses are all loading from your running Dala backend.',
+                  tone: _BannerTone.success,
+                ),
               ],
             ),
           ),
@@ -262,8 +288,8 @@ class _HomePageState extends State<HomePage> {
     final prefix = hour < 12
         ? 'Good morning'
         : hour < 17
-            ? 'Good afternoon'
-            : 'Good evening';
+        ? 'Good afternoon'
+        : 'Good evening';
 
     if (user == null || user.isAnonymous) {
       return prefix;
@@ -290,13 +316,73 @@ class _HomePageState extends State<HomePage> {
 
     return '${monthNames[date.month - 1]} ${date.day}';
   }
+
+  IconData _moodIcon(int score) {
+    switch (score) {
+      case 1:
+        return Icons.sentiment_very_dissatisfied_rounded;
+      case 2:
+        return Icons.sentiment_dissatisfied_rounded;
+      case 4:
+        return Icons.sentiment_satisfied_rounded;
+      case 5:
+        return Icons.sentiment_very_satisfied_rounded;
+      default:
+        return Icons.sentiment_neutral_rounded;
+    }
+  }
+}
+
+enum _BannerTone { success, warning }
+
+class _InfoBanner extends StatelessWidget {
+  const _InfoBanner({required this.message, required this.tone});
+
+  final String message;
+  final _BannerTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final background = tone == _BannerTone.success
+        ? AppTheme.sageSoft
+        : const Color(0xFFF8ECE6);
+    final foreground = tone == _BannerTone.success
+        ? AppTheme.sage
+        : AppTheme.clay;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            tone == _BannerTone.success
+                ? Icons.cloud_done_rounded
+                : Icons.info_outline_rounded,
+            color: foreground,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.ink,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.child,
-    this.accent,
-  });
+  const _SectionCard({required this.child, this.accent});
 
   final Widget child;
   final Color? accent;
@@ -314,10 +400,7 @@ class _SectionCard extends StatelessWidget {
               : LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white,
-                    accent!.withOpacity(0.22),
-                  ],
+                  colors: [Colors.white, accent!.withValues(alpha: 0.22)],
                 ),
         ),
         child: child,
@@ -362,16 +445,16 @@ class _QuickActionCard extends StatelessWidget {
               const SizedBox(height: 14),
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               Text(
                 subtitle,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.muted,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.muted),
               ),
             ],
           ),
