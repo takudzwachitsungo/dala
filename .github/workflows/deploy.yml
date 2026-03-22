@@ -1,0 +1,51 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to DigitalOcean App Platform
+    if: ${{ (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') && secrets.DIGITALOCEAN_ACCESS_TOKEN != '' && secrets.SECRET_KEY != '' && secrets.GROQ_API_KEY != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Deploy app
+        uses: digitalocean/app_action/deploy@v2
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          app_spec_location: .do/app.yaml
+          print_build_logs: true
+          print_deploy_logs: true
+
+  deploy-skipped:
+    name: Deployment Skipped
+    if: ${{ !((github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') && secrets.DIGITALOCEAN_ACCESS_TOKEN != '' && secrets.SECRET_KEY != '' && secrets.GROQ_API_KEY != '') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain skipped deployment
+        run: |
+          echo "Deployment was skipped."
+          echo "To enable CD, add these repository secrets: DIGITALOCEAN_ACCESS_TOKEN, SECRET_KEY, and GROQ_API_KEY."
+          echo "Pushes also require the CI workflow to complete successfully on main."

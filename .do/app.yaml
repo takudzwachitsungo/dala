@@ -22,8 +22,8 @@ services:
     github:
       repo: takudzwachitsungo/dala
       branch: main
-      deploy_on_push: true
-    source_dir: /backend
+      deploy_on_push: false
+    source_dir: backend
     dockerfile_path: backend/Dockerfile
     http_port: 8000
     instance_count: 1
@@ -32,22 +32,34 @@ services:
     envs:
       - key: ENVIRONMENT
         value: production
-      - key: DATABASE_URL
-        value: ${dala-db.DATABASE_URL}
-      - key: REDIS_URL
-        value: ${dala-redis.DATABASE_URL}
-      - key: JWT_SECRET_KEY
+      - key: POSTGRES_USER
+        value: ${dala-db.USERNAME}
+      - key: POSTGRES_PASSWORD
+        value: ${dala-db.PASSWORD}
+      - key: POSTGRES_DB
+        value: ${dala-db.DATABASE}
+      - key: POSTGRES_HOST
+        value: ${dala-db.HOSTNAME}
+      - key: POSTGRES_PORT
+        value: ${dala-db.PORT}
+      - key: REDIS_HOST
+        value: ${dala-redis.HOSTNAME}
+      - key: REDIS_PORT
+        value: ${dala-redis.PORT}
+      - key: SECRET_KEY
         scope: RUN_TIME
         type: SECRET
-      - key: JWT_ALGORITHM
+        value: ${SECRET_KEY}
+      - key: ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "43200"
-      - key: ANTHROPIC_API_KEY
+      - key: GROQ_API_KEY
         scope: RUN_TIME
         type: SECRET
-      - key: CORS_ORIGINS
-        value: ${APP_URL}
+        value: ${GROQ_API_KEY}
+      - key: ALLOWED_ORIGINS
+        value: '["${APP_URL}"]'
     
     health_check:
       http_path: /health
@@ -66,10 +78,10 @@ static_sites:
     github:
       repo: takudzwachitsungo/dala
       branch: main
-      deploy_on_push: true
-    source_dir: /ui
-    build_command: npm install && npm run build
-    output_dir: /dist
+      deploy_on_push: false
+    source_dir: ui
+    build_command: npm ci && npm run build
+    output_dir: dist
     
     envs:
       - key: VITE_API_URL
