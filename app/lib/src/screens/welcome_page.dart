@@ -38,7 +38,7 @@ class WelcomePage extends StatelessWidget {
                               width: 56,
                               height: 56,
                               decoration: const BoxDecoration(
-                                color: AppTheme.sageSoft,
+                                color: AppTheme.subtle,
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -57,7 +57,7 @@ class WelcomePage extends StatelessWidget {
                               'A safe place to pause, breathe, and feel heard. We\'re starting with an anonymous mobile foundation so the experience can grow around calm, care, and privacy.',
                               style: Theme.of(context).textTheme.bodyLarge
                                   ?.copyWith(
-                                    color: AppTheme.muted,
+                                    color: AppTheme.secondaryText,
                                     height: 1.45,
                                   ),
                             ),
@@ -74,7 +74,7 @@ class WelcomePage extends StatelessWidget {
                                   controller.errorMessage!,
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
-                                        color: AppTheme.ink,
+                                        color: AppTheme.primaryText,
                                         height: 1.35,
                                       ),
                                 ),
@@ -156,7 +156,7 @@ class _FeaturePill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppTheme.muted,
+          color: AppTheme.secondaryText,
           fontWeight: FontWeight.w600,
         ),
       ),

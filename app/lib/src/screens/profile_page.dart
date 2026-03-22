@@ -54,7 +54,7 @@ class ProfilePage extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor: AppTheme.sageSoft,
+                        backgroundColor: AppTheme.subtle,
                         child: Text(
                           user.name.substring(0, 1).toUpperCase(),
                           style: Theme.of(context).textTheme.titleLarge
@@ -78,7 +78,7 @@ class ProfilePage extends StatelessWidget {
                             Text(
                               'Member since ${_monthLabel(user.memberSince)} ${user.memberSince.year}',
                               style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: AppTheme.muted),
+                                  ?.copyWith(color: AppTheme.secondaryText),
                             ),
                           ],
                         ),
@@ -157,14 +157,14 @@ class ProfilePage extends StatelessWidget {
                         'Private notes, grounding anchors, and who to contact first.',
                         style: Theme.of(
                           context,
-                        ).textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
+                        ).textTheme.bodyMedium?.copyWith(color: AppTheme.secondaryText),
                       ),
                       const SizedBox(height: 14),
                       if (safetySections.isEmpty)
                         Text(
                           'Add your grounding steps, trusted contacts, and reasons to keep going so they are easy to reach when you need them.',
                           style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppTheme.muted, height: 1.4),
+                              ?.copyWith(color: AppTheme.secondaryText, height: 1.4),
                         )
                       else
                         ...safetySections.map(
@@ -191,7 +191,7 @@ class ProfilePage extends StatelessWidget {
                                           child: Icon(
                                             Icons.favorite_rounded,
                                             size: 16,
-                                            color: AppTheme.rose,
+                                            color: Colors.redAccent,
                                           ),
                                         ),
                                         const SizedBox(width: 10),
@@ -233,7 +233,7 @@ class ProfilePage extends StatelessWidget {
                         Text(
                           'Your latest mood check-ins will show up here once you start logging them.',
                           style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppTheme.muted),
+                              ?.copyWith(color: AppTheme.secondaryText),
                         )
                       else
                         SizedBox(
@@ -260,8 +260,8 @@ class ProfilePage extends StatelessWidget {
                                           color: entry.score >= 4
                                               ? AppTheme.sage
                                               : entry.score == 3
-                                              ? AppTheme.gold
-                                              : AppTheme.clay,
+                                              ? AppTheme.sageHover
+                                              : AppTheme.subtle,
                                           borderRadius: BorderRadius.circular(
                                             999,
                                           ),
@@ -273,7 +273,7 @@ class ProfilePage extends StatelessWidget {
                                         style: Theme.of(context)
                                             .textTheme
                                             .bodySmall
-                                            ?.copyWith(color: AppTheme.muted),
+                                            ?.copyWith(color: AppTheme.secondaryText),
                                       ),
                                     ],
                                   );
@@ -381,13 +381,13 @@ class _ProfileBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline_rounded, color: AppTheme.clay),
+          const Icon(Icons.info_outline_rounded, color: AppTheme.primaryText),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.ink,
+                color: AppTheme.primaryText,
                 height: 1.35,
               ),
             ),
@@ -425,7 +425,7 @@ class _MetricCard extends StatelessWidget {
               label,
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: AppTheme.muted),
+              ).textTheme.bodySmall?.copyWith(color: AppTheme.secondaryText),
             ),
             const SizedBox(height: 6),
             Text(
@@ -546,7 +546,7 @@ class _SafetyPlanEditorState extends State<_SafetyPlanEditor> {
                         'Use one line per item so the app can present your plan clearly when you need it.',
                         style: Theme.of(
                           context,
-                        ).textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
+                        ).textTheme.bodyMedium?.copyWith(color: AppTheme.secondaryText),
                       ),
                       const SizedBox(height: 20),
                       _EditorField(

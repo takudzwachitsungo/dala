@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -17,6 +18,8 @@ class ApiException implements Exception {
 
 class DalaApiClient {
   DalaApiClient({http.Client? client}) : _client = client ?? http.Client();
+
+  static const Duration _requestTimeout = Duration(seconds: 12);
 
   final http.Client _client;
 
@@ -234,47 +237,71 @@ class DalaApiClient {
       if (token != null) 'Authorization': 'Bearer $token',
     };
 
-    late http.Response response;
-    switch (method) {
-      case 'GET':
-        response = await _client.get(uri, headers: headers);
-        break;
-      case 'POST':
-        response = await _client.post(
-          uri,
-          headers: headers,
-          body: body == null ? null : jsonEncode(body),
-        );
-        break;
-      case 'PUT':
-        response = await _client.put(
-          uri,
-          headers: headers,
-          body: body == null ? null : jsonEncode(body),
-        );
-        break;
-      case 'PATCH':
-        response = await _client.patch(
-          uri,
-          headers: headers,
-          body: body == null ? null : jsonEncode(body),
-        );
-        break;
-      case 'DELETE':
-        response = await _client.delete(uri, headers: headers);
-        break;
-      default:
-        throw UnsupportedError('Unsupported method: $method');
-    }
+    try {
+      late http.Response response;
+      switch (method) {
+        case 'GET':
+          response = await _client
+              .get(uri, headers: headers)
+              .timeout(_requestTimeout);
+          break;
+        case 'POST':
+          response = await _client
+              .post(
+                uri,
+                headers: headers,
+                body: body == null ? null : jsonEncode(body),
+              )
+              .timeout(_requestTimeout);
+          break;
+        case 'PUT':
+          response = await _client
+              .put(
+                uri,
+                headers: headers,
+                body: body == null ? null : jsonEncode(body),
+              )
+              .timeout(_requestTimeout);
+          break;
+        case 'PATCH':
+          response = await _client
+              .patch(
+                uri,
+                headers: headers,
+                body: body == null ? null : jsonEncode(body),
+              )
+              .timeout(_requestTimeout);
+          break;
+        case 'DELETE':
+          response = await _client
+              .delete(uri, headers: headers)
+              .timeout(_requestTimeout);
+          break;
+        default:
+          throw UnsupportedError('Unsupported method: $method');
+      }
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return response;
-    }
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response;
+      }
 
-    throw ApiException(
-      _extractErrorMessage(response),
-      statusCode: response.statusCode,
-    );
+      throw ApiException(
+        _extractErrorMessage(response),
+        statusCode: response.statusCode,
+      );
+    } on TimeoutException {
+      throw ApiException(
+        'Dala could not reach $apiBaseUrl in time. '
+        'If you are running on a physical phone, start Flutter with '
+        '--dart-define=DALA_API_URL=http://<your-computer-ip>:8000/api/v1 '
+        'and --dart-define=DALA_WS_URL=ws://<your-computer-ip>:8000/api/v1.',
+      );
+    } on http.ClientException catch (error) {
+      throw ApiException(
+        'Dala could not connect to $apiBaseUrl. ${error.message} '
+        'If you are running on a physical phone, use your computer LAN IP instead of localhost.',
+      );
+    }
   }
 
   Map<String, dynamic> _decodeObject(http.Response response) {

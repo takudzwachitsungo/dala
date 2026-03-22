@@ -47,7 +47,7 @@ class _CompanionPageState extends State<CompanionPage> {
                           : 'Preparing the secure chat connection to your backend.',
                       style: Theme.of(
                         context,
-                      ).textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
+                      ).textTheme.bodyMedium?.copyWith(color: AppTheme.secondaryText),
                     ),
                     const SizedBox(height: 18),
                     Wrap(
@@ -62,7 +62,7 @@ class _CompanionPageState extends State<CompanionPage> {
                               : 'Offline',
                           color: widget.controller.isChatConnected
                               ? AppTheme.sage
-                              : AppTheme.clay,
+                              : AppTheme.primaryText,
                         ),
                         ActionChip(
                           avatar: const Icon(Icons.refresh_rounded, size: 18),
@@ -130,14 +130,14 @@ class _CompanionPageState extends State<CompanionPage> {
                           vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: isUser ? AppTheme.ink : Colors.white,
+                          color: isUser ? AppTheme.primaryText : Colors.white,
                           borderRadius: BorderRadius.circular(22),
                         ),
                         child: Text(
                           message.text,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
-                                color: isUser ? Colors.white : AppTheme.ink,
+                                color: isUser ? Colors.white : AppTheme.primaryText,
                                 height: 1.45,
                               ),
                         ),
@@ -246,13 +246,13 @@ class _CompanionError extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppTheme.clay),
+          const Icon(Icons.warning_amber_rounded, color: AppTheme.primaryText),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.ink,
+                color: AppTheme.primaryText,
                 height: 1.35,
               ),
             ),
@@ -285,7 +285,7 @@ class _TypingBubble extends StatelessWidget {
               width: 7,
               height: 7,
               decoration: BoxDecoration(
-                color: [AppTheme.sageSoft, AppTheme.gold, AppTheme.sage][index],
+                color: [AppTheme.subtle, AppTheme.sageHover, AppTheme.sage][index],
                 shape: BoxShape.circle,
               ),
             ),

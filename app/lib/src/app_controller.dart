@@ -442,17 +442,24 @@ class DalaAppController extends ChangeNotifier {
     _isBootstrapping = true;
     notifyListeners();
 
-    final savedToken = await _sessionStore.readToken();
-    if (savedToken == null || savedToken.isEmpty) {
-      _isBootstrapping = false;
-      notifyListeners();
-      return;
-    }
-
-    _token = savedToken;
-
     try {
-      await _loadAuthenticatedData(connectChat: false);
+      final savedToken = await _sessionStore.readToken().timeout(
+        const Duration(seconds: 5),
+      );
+      if (savedToken == null || savedToken.isEmpty) {
+        return;
+      }
+
+      _token = savedToken;
+      await _loadAuthenticatedData(
+        connectChat: false,
+      ).timeout(const Duration(seconds: 15));
+    } on TimeoutException {
+      await _resetSession();
+      _setError(
+        'Restoring your previous session took too long. '
+        'You can continue anonymously again below.',
+      );
     } catch (error) {
       await _resetSession();
       _setError(_describeError(error));

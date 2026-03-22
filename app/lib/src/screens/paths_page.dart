@@ -31,7 +31,7 @@ class PathsPage extends StatelessWidget {
                 'Short journeys that blend emotional support, reflection, and faith.',
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
+                ).textTheme.bodyMedium?.copyWith(color: AppTheme.secondaryText),
               ),
               const SizedBox(height: 20),
               if (controller.paths.isEmpty)
@@ -56,7 +56,7 @@ class PathsPage extends StatelessWidget {
                               'A ${path.difficulty} path for ${path.category}.',
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
-                                    color: AppTheme.muted,
+                                    color: AppTheme.secondaryText,
                                     height: 1.4,
                                   ),
                             ),
@@ -125,7 +125,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               'Once your backend returns path content, it will show up here automatically.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.muted,
+                color: AppTheme.secondaryText,
                 height: 1.4,
               ),
             ),
@@ -159,7 +159,7 @@ class _MetaChip extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppTheme.ink,
+              color: AppTheme.primaryText,
             ),
           ),
         ],

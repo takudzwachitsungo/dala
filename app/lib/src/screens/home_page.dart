@@ -60,7 +60,7 @@ class _HomePageState extends State<HomePage> {
                   'Take a moment to arrive. You don\'t have to rush what your heart is trying to say.',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodyLarge?.copyWith(color: AppTheme.muted),
+                  ).textTheme.bodyLarge?.copyWith(color: AppTheme.secondaryText),
                 ),
                 const SizedBox(height: 24),
                 _SectionCard(
@@ -77,7 +77,7 @@ class _HomePageState extends State<HomePage> {
                         'A quick check-in helps Dala tailor the tone and support.',
                         style: Theme.of(
                           context,
-                        ).textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
+                        ).textTheme.bodyMedium?.copyWith(color: AppTheme.secondaryText),
                       ),
                       const SizedBox(height: 18),
                       Wrap(
@@ -93,7 +93,7 @@ class _HomePageState extends State<HomePage> {
                               size: 18,
                               color: isSelected
                                   ? AppTheme.sage
-                                  : AppTheme.muted,
+                                  : AppTheme.secondaryText,
                             ),
                             label: Text(mood.label),
                             onSelected: (_) async {
@@ -107,7 +107,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 18),
                 _SectionCard(
-                  accent: AppTheme.gold,
+                  accent: AppTheme.sage,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -136,7 +136,7 @@ class _HomePageState extends State<HomePage> {
                       Text(
                         verse.devotional,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.muted,
+                          color: AppTheme.secondaryText,
                           height: 1.45,
                         ),
                       ),
@@ -181,7 +181,7 @@ class _HomePageState extends State<HomePage> {
                         'Capture a thought before it slips away.',
                         style: Theme.of(
                           context,
-                        ).textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
+                        ).textTheme.bodyMedium?.copyWith(color: AppTheme.secondaryText),
                       ),
                       const SizedBox(height: 14),
                       TextField(
@@ -259,7 +259,7 @@ class _HomePageState extends State<HomePage> {
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodySmall
-                                          ?.copyWith(color: AppTheme.muted),
+                                          ?.copyWith(color: AppTheme.secondaryText),
                                     ),
                                   ],
                                 ),
@@ -344,11 +344,11 @@ class _InfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final background = tone == _BannerTone.success
-        ? AppTheme.sageSoft
+        ? AppTheme.subtle
         : const Color(0xFFF8ECE6);
     final foreground = tone == _BannerTone.success
         ? AppTheme.sage
-        : AppTheme.clay;
+        : AppTheme.primaryText;
 
     return Container(
       width: double.infinity,
@@ -370,7 +370,7 @@ class _InfoBanner extends StatelessWidget {
             child: Text(
               message,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.ink,
+                color: AppTheme.primaryText,
                 height: 1.35,
               ),
             ),
@@ -437,7 +437,7 @@ class _QuickActionCard extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: const BoxDecoration(
-                  color: AppTheme.sageSoft,
+                  color: AppTheme.subtle,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: AppTheme.sage),
@@ -454,7 +454,7 @@ class _QuickActionCard extends StatelessWidget {
                 subtitle,
                 style: Theme.of(
                   context,
-                ).textTheme.bodySmall?.copyWith(color: AppTheme.muted),
+                ).textTheme.bodySmall?.copyWith(color: AppTheme.secondaryText),
               ),
             ],
           ),

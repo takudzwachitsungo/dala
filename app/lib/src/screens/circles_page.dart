@@ -31,7 +31,7 @@ class CirclesPage extends StatelessWidget {
                 'Community spaces for shared encouragement, prayer, and healing rhythms.',
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: AppTheme.muted),
+                ).textTheme.bodyMedium?.copyWith(color: AppTheme.secondaryText),
               ),
               const SizedBox(height: 20),
               if (controller.circles.isEmpty)
@@ -52,7 +52,7 @@ class CirclesPage extends StatelessWidget {
                                   width: 42,
                                   height: 42,
                                   decoration: const BoxDecoration(
-                                    color: AppTheme.sageSoft,
+                                    color: AppTheme.subtle,
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
@@ -87,7 +87,7 @@ class CirclesPage extends StatelessWidget {
                               circle.description,
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
-                                    color: AppTheme.muted,
+                                    color: AppTheme.secondaryText,
                                     height: 1.45,
                                   ),
                             ),
@@ -142,7 +142,7 @@ class _EmptyCircleState extends StatelessWidget {
             Text(
               'This section will populate as soon as the backend serves community groups.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.muted,
+                color: AppTheme.secondaryText,
                 height: 1.4,
               ),
             ),
@@ -168,7 +168,7 @@ class _Stat extends StatelessWidget {
           label,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
-            color: AppTheme.ink,
+            color: AppTheme.primaryText,
           ),
         ),
         const SizedBox(height: 2),
@@ -176,7 +176,7 @@ class _Stat extends StatelessWidget {
           caption,
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: AppTheme.muted),
+          ).textTheme.bodySmall?.copyWith(color: AppTheme.secondaryText),
         ),
       ],
     );
