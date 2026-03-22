@@ -5,10 +5,7 @@ import '../theme/app_theme.dart';
 import '../widgets/dala_scaffold.dart';
 
 class CompanionPage extends StatefulWidget {
-  const CompanionPage({
-    super.key,
-    required this.controller,
-  });
+  const CompanionPage({super.key, required this.controller});
 
   final DalaAppController controller;
 
@@ -40,17 +37,46 @@ class _CompanionPageState extends State<CompanionPage> {
                   children: [
                     Text(
                       'Dala Companion',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'A mobile preview of the chat flow. The UI is ready for real backend wiring next.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.muted,
-                          ),
+                      widget.controller.isChatConnected
+                          ? 'Connected to your live Dala conversation.'
+                          : 'Preparing the secure chat connection to your backend.',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: AppTheme.secondaryText),
                     ),
+                    const SizedBox(height: 18),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _StatusPill(
+                          label: widget.controller.isChatConnected
+                              ? 'Connected'
+                              : widget.controller.isCompanionLoading
+                              ? 'Connecting'
+                              : 'Offline',
+                          color: widget.controller.isChatConnected
+                              ? AppTheme.sage
+                              : AppTheme.primaryText,
+                        ),
+                        ActionChip(
+                          avatar: const Icon(Icons.refresh_rounded, size: 18),
+                          label: const Text('Reconnect'),
+                          onPressed: widget.controller.isCompanionLoading
+                              ? null
+                              : () => widget.controller.ensureCompanionReady(),
+                        ),
+                      ],
+                    ),
+                    if (widget.controller.errorMessage != null) ...[
+                      const SizedBox(height: 14),
+                      _CompanionError(message: widget.controller.errorMessage!),
+                    ],
                     const SizedBox(height: 18),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -62,7 +88,8 @@ class _CompanionPageState extends State<CompanionPage> {
                             child: ChoiceChip(
                               selected: isSelected,
                               label: Text(_modeLabel(mode)),
-                              onSelected: (_) => widget.controller.setChatMode(mode),
+                              onSelected: (_) =>
+                                  widget.controller.setChatMode(mode),
                             ),
                           );
                         }).toList(),
@@ -74,12 +101,13 @@ class _CompanionPageState extends State<CompanionPage> {
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                  itemCount: widget.controller.messages.length +
-                      (widget.controller.isSendingMessage ? 1 : 0),
+                  itemCount:
+                      widget.controller.messages.length +
+                      (widget.controller.isTyping ? 1 : 0),
                   itemBuilder: (context, index) {
                     final isTypingIndicator =
-                        widget.controller.isSendingMessage &&
-                            index == widget.controller.messages.length;
+                        widget.controller.isTyping &&
+                        index == widget.controller.messages.length;
 
                     if (isTypingIndicator) {
                       return const Align(
@@ -91,8 +119,9 @@ class _CompanionPageState extends State<CompanionPage> {
                     final message = widget.controller.messages[index];
                     final isUser = message.role == 'user';
                     return Align(
-                      alignment:
-                          isUser ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: isUser
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
                         constraints: const BoxConstraints(maxWidth: 320),
                         margin: const EdgeInsets.only(bottom: 12),
@@ -101,13 +130,14 @@ class _CompanionPageState extends State<CompanionPage> {
                           vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: isUser ? AppTheme.ink : Colors.white,
+                          color: isUser ? AppTheme.primaryText : Colors.white,
                           borderRadius: BorderRadius.circular(22),
                         ),
                         child: Text(
                           message.text,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: isUser ? Colors.white : AppTheme.ink,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: isUser ? Colors.white : AppTheme.primaryText,
                                 height: 1.45,
                               ),
                         ),
@@ -127,6 +157,7 @@ class _CompanionPageState extends State<CompanionPage> {
                         maxLines: 4,
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _handleSend(),
+                        enabled: !widget.controller.isCompanionLoading,
                         decoration: const InputDecoration(
                           hintText: 'Type what is on your heart...',
                         ),
@@ -134,7 +165,9 @@ class _CompanionPageState extends State<CompanionPage> {
                     ),
                     const SizedBox(width: 12),
                     FilledButton(
-                      onPressed: widget.controller.isSendingMessage
+                      onPressed:
+                          widget.controller.isSendingMessage ||
+                              widget.controller.isCompanionLoading
                           ? null
                           : _handleSend,
                       style: FilledButton.styleFrom(
@@ -171,6 +204,65 @@ class _CompanionPageState extends State<CompanionPage> {
   }
 }
 
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _CompanionError extends StatelessWidget {
+  const _CompanionError({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8ECE6),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: AppTheme.primaryText),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.primaryText,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TypingBubble extends StatelessWidget {
   const _TypingBubble();
 
@@ -193,11 +285,7 @@ class _TypingBubble extends StatelessWidget {
               width: 7,
               height: 7,
               decoration: BoxDecoration(
-                color: [
-                  AppTheme.sageSoft,
-                  AppTheme.gold,
-                  AppTheme.sage,
-                ][index],
+                color: [AppTheme.subtle, AppTheme.sageHover, AppTheme.sage][index],
                 shape: BoxShape.circle,
               ),
             ),

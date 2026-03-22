@@ -1,6 +1,11 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+
+import 'data/api_client.dart';
+import 'data/chat_socket_client.dart';
+import 'data/session_store.dart';
 
 enum AppTab { home, companion, paths, circles, profile }
 
@@ -8,6 +13,7 @@ enum ChatMode { listen, reflect, ground }
 
 class AppUser {
   const AppUser({
+    required this.id,
     required this.name,
     required this.memberSince,
     required this.streakDays,
@@ -17,6 +23,7 @@ class AppUser {
     required this.isAnonymous,
   });
 
+  final String id;
   final String name;
   final DateTime memberSince;
   final int streakDays;
@@ -25,7 +32,21 @@ class AppUser {
   final int milestoneCount;
   final bool isAnonymous;
 
+  factory AppUser.fromProfileJson(Map<String, dynamic> json) {
+    return AppUser(
+      id: '${json['id']}',
+      name: '${json['username'] ?? 'friend'}',
+      memberSince: DateTime.tryParse('${json['created_at']}') ?? DateTime.now(),
+      streakDays: (json['streak_days'] as num?)?.toInt() ?? 0,
+      totalMoodEntries: (json['total_mood_entries'] as num?)?.toInt() ?? 0,
+      totalConversations: (json['total_conversations'] as num?)?.toInt() ?? 0,
+      milestoneCount: (json['milestone_count'] as num?)?.toInt() ?? 0,
+      isAnonymous: json['is_anonymous'] == true,
+    );
+  }
+
   AppUser copyWith({
+    String? id,
     String? name,
     DateTime? memberSince,
     int? streakDays,
@@ -35,6 +56,7 @@ class AppUser {
     bool? isAnonymous,
   }) {
     return AppUser(
+      id: id ?? this.id,
       name: name ?? this.name,
       memberSince: memberSince ?? this.memberSince,
       streakDays: streakDays ?? this.streakDays,
@@ -70,30 +92,68 @@ class VerseMoment {
   final String verse;
   final String reference;
   final String devotional;
+
+  factory VerseMoment.fromJson(Map<String, dynamic> json) {
+    return VerseMoment(
+      verse: '${json['verse'] ?? ''}',
+      reference: '${json['reference'] ?? ''}',
+      devotional: '${json['devotional'] ?? ''}',
+    );
+  }
 }
 
 class ReflectionEntry {
   const ReflectionEntry({
+    required this.id,
     required this.note,
     required this.moodScore,
     required this.createdAt,
   });
 
+  final String id;
   final String note;
   final int moodScore;
   final DateTime createdAt;
+
+  factory ReflectionEntry.fromMoodJson(Map<String, dynamic> json) {
+    return ReflectionEntry(
+      id: '${json['id']}',
+      note: '${json['notes'] ?? ''}',
+      moodScore: DalaAppController._normalizeMoodScore(
+        (json['mood_score'] as num?)?.toInt() ?? 3,
+      ),
+      createdAt: DateTime.tryParse('${json['created_at']}') ?? DateTime.now(),
+    );
+  }
 }
 
 class MoodCheckin {
   const MoodCheckin({
+    required this.id,
     required this.score,
     required this.label,
     required this.createdAt,
+    this.note,
   });
 
+  final String id;
   final int score;
   final String label;
   final DateTime createdAt;
+  final String? note;
+
+  factory MoodCheckin.fromJson(Map<String, dynamic> json) {
+    final score = DalaAppController._normalizeMoodScore(
+      (json['mood_score'] as num?)?.toInt() ?? 3,
+    );
+    return MoodCheckin(
+      id: '${json['id']}',
+      score: score,
+      label: _moodLabel(score),
+      createdAt: DateTime.tryParse('${json['created_at']}') ?? DateTime.now(),
+      note: json['notes'] as String?,
+    );
+  }
 }
 
 class ChatMessage {
@@ -108,39 +168,180 @@ class ChatMessage {
   final String role;
   final String text;
   final DateTime sentAt;
+
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      id: '${json['id']}',
+      role: '${json['role'] ?? 'assistant'}',
+      text: '${json['content'] ?? ''}',
+      sentAt: DateTime.tryParse('${json['created_at']}') ?? DateTime.now(),
+    );
+  }
+
+  ChatMessage copyWith({
+    String? id,
+    String? role,
+    String? text,
+    DateTime? sentAt,
+  }) {
+    return ChatMessage(
+      id: id ?? this.id,
+      role: role ?? this.role,
+      text: text ?? this.text,
+      sentAt: sentAt ?? this.sentAt,
+    );
+  }
 }
 
 class PathJourney {
   const PathJourney({
+    required this.id,
     required this.title,
-    required this.subtitle,
+    required this.category,
+    required this.difficulty,
     required this.duration,
-    required this.focus,
+    required this.stepCount,
+    required this.enrollmentCount,
+    this.isEnrolled = false,
   });
 
+  final String id;
   final String title;
-  final String subtitle;
-  final String duration;
-  final String focus;
+  final String category;
+  final String difficulty;
+  final int? duration;
+  final int stepCount;
+  final int enrollmentCount;
+  final bool isEnrolled;
+
+  factory PathJourney.fromJson(Map<String, dynamic> json) {
+    return PathJourney(
+      id: '${json['id']}',
+      title: '${json['name'] ?? 'Untitled path'}',
+      category: '${json['category'] ?? 'growth'}',
+      difficulty: '${json['difficulty'] ?? 'beginner'}',
+      duration: (json['estimated_duration'] as num?)?.toInt(),
+      stepCount: (json['step_count'] as num?)?.toInt() ?? 0,
+      enrollmentCount: (json['enrollment_count'] as num?)?.toInt() ?? 0,
+      isEnrolled: json['user_progress'] != null,
+    );
+  }
+
+  PathJourney copyWith({bool? isEnrolled, int? enrollmentCount}) {
+    return PathJourney(
+      id: id,
+      title: title,
+      category: category,
+      difficulty: difficulty,
+      duration: duration,
+      stepCount: stepCount,
+      enrollmentCount: enrollmentCount ?? this.enrollmentCount,
+      isEnrolled: isEnrolled ?? this.isEnrolled,
+    );
+  }
 }
 
 class CircleGroup {
   const CircleGroup({
+    required this.id,
     required this.name,
+    required this.topic,
     required this.description,
     required this.members,
-    required this.energy,
+    required this.postCount,
+    this.icon,
+    this.isMember = false,
   });
 
+  final String id;
   final String name;
+  final String topic;
   final String description;
   final int members;
-  final String energy;
+  final int postCount;
+  final String? icon;
+  final bool isMember;
+
+  factory CircleGroup.fromJson(Map<String, dynamic> json) {
+    return CircleGroup(
+      id: '${json['id']}',
+      name: '${json['name'] ?? 'Unnamed circle'}',
+      topic: '${json['topic'] ?? 'support'}',
+      description: '${json['description'] ?? ''}',
+      members: (json['member_count'] as num?)?.toInt() ?? 0,
+      postCount: (json['post_count'] as num?)?.toInt() ?? 0,
+      icon: json['icon'] as String?,
+      isMember: json['is_member'] == true,
+    );
+  }
+
+  CircleGroup copyWith({bool? isMember, int? members}) {
+    return CircleGroup(
+      id: id,
+      name: name,
+      topic: topic,
+      description: description,
+      members: members ?? this.members,
+      postCount: postCount,
+      icon: icon,
+      isMember: isMember ?? this.isMember,
+    );
+  }
+}
+
+class SafetyPlanData {
+  const SafetyPlanData({
+    this.warningSigns = const [],
+    this.internalCoping = const [],
+    this.socialContacts = const [],
+    this.peopleToAsk = const [],
+    this.professionals = const [],
+    this.emergencyContacts = const [],
+    this.safeEnvironment,
+    this.reasonsToLive = const [],
+  });
+
+  final List<String> warningSigns;
+  final List<String> internalCoping;
+  final List<String> socialContacts;
+  final List<String> peopleToAsk;
+  final List<String> professionals;
+  final List<String> emergencyContacts;
+  final String? safeEnvironment;
+  final List<String> reasonsToLive;
+
+  factory SafetyPlanData.fromJson(Map<String, dynamic> json) {
+    return SafetyPlanData(
+      warningSigns: _asStringList(json['warning_signs']),
+      internalCoping: _asStringList(json['internal_coping']),
+      socialContacts: _asStringList(json['social_contacts']),
+      peopleToAsk: _asStringList(json['people_to_ask']),
+      professionals: _asStringList(json['professionals']),
+      emergencyContacts: _asStringList(json['emergency_contacts']),
+      safeEnvironment: json['safe_environment'] as String?,
+      reasonsToLive: _asStringList(json['reasons_to_live']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'warning_signs': warningSigns,
+      'internal_coping': internalCoping,
+      'social_contacts': socialContacts,
+      'people_to_ask': peopleToAsk,
+      'professionals': professionals,
+      'emergency_contacts': emergencyContacts,
+      'safe_environment': safeEnvironment,
+      'reasons_to_live': reasonsToLive,
+    };
+  }
 }
 
 class DalaAppController extends ChangeNotifier {
-  DalaAppController() {
-    _seedSessionData();
+  DalaAppController({DalaApiClient? apiClient, SessionStore? sessionStore})
+    : _apiClient = apiClient ?? DalaApiClient(),
+      _sessionStore = sessionStore ?? SessionStore() {
+    _initialize();
   }
 
   static const List<MoodOption> moodOptions = [
@@ -176,104 +377,99 @@ class DalaAppController extends ChangeNotifier {
     ),
   ];
 
-  static const Map<int, VerseMoment> verseMoments = {
-    1: VerseMoment(
-      verse: 'The Lord is close to the brokenhearted.',
-      reference: 'Psalm 34:18',
-      devotional: 'You do not have to be strong first. God comes near before the healing feels complete.',
-    ),
-    2: VerseMoment(
-      verse: 'Cast all your anxiety on Him because He cares for you.',
-      reference: '1 Peter 5:7',
-      devotional: 'Today can be small and honest. Even a whispered prayer still counts as reaching for hope.',
-    ),
-    3: VerseMoment(
-      verse: 'Your word is a lamp to my feet and a light to my path.',
-      reference: 'Psalm 119:105',
-      devotional: 'Steady days matter too. Faithfulness often looks like taking the next kind step, not seeing the whole road.',
-    ),
-    4: VerseMoment(
-      verse: 'May the God of hope fill you with all joy and peace.',
-      reference: 'Romans 15:13',
-      devotional: 'Let hope have room today. Notice what is growing, even if it still feels new and fragile.',
-    ),
-    5: VerseMoment(
-      verse: 'Give thanks in all circumstances.',
-      reference: '1 Thessalonians 5:18',
-      devotional: 'Gratitude does not ignore pain. It simply lets grace be visible beside it.',
-    ),
-  };
+  final DalaApiClient _apiClient;
+  final SessionStore _sessionStore;
 
-  final List<PathJourney> paths = const [
-    PathJourney(
-      title: 'Quieting Anxiety',
-      subtitle: 'Breath prayers, grounding, and gentle reflection.',
-      duration: '7 days',
-      focus: 'Calm your body and mind',
-    ),
-    PathJourney(
-      title: 'Rebuilding Hope',
-      subtitle: 'Small prompts for when joy feels far away.',
-      duration: '14 days',
-      focus: 'Find language for hope again',
-    ),
-    PathJourney(
-      title: 'Rest and Recovery',
-      subtitle: 'A slower rhythm for tired hearts and minds.',
-      duration: '10 days',
-      focus: 'Recover emotionally and spiritually',
-    ),
-  ];
-
-  final List<CircleGroup> circles = const [
-    CircleGroup(
-      name: 'Gentle Evenings',
-      description: 'A quiet space for people winding down after demanding days.',
-      members: 42,
-      energy: 'Soft and supportive',
-    ),
-    CircleGroup(
-      name: 'Young Adults Prayer Circle',
-      description: 'Short reflections, prayer requests, and honest check-ins.',
-      members: 87,
-      energy: 'Warm and open',
-    ),
-    CircleGroup(
-      name: 'Starting Over',
-      description: 'For anyone navigating change, grief, or a new season.',
-      members: 58,
-      energy: 'Courageous and honest',
-    ),
-  ];
+  ChatSocketClient? _chatSocketClient;
+  String? _token;
+  String? _conversationId;
+  String? _streamingMessageId;
 
   AppUser? _user;
   AppTab _selectedTab = AppTab.home;
   ChatMode _chatMode = ChatMode.listen;
+
+  bool _isBootstrapping = true;
   bool _isCreatingSession = false;
+  bool _isAuthenticating = false;
+  bool _isHomeLoading = false;
+  bool _isPathsLoading = false;
+  bool _isCirclesLoading = false;
+  bool _isCompanionLoading = false;
   bool _isSendingMessage = false;
+  bool _isTyping = false;
+  bool _isChatConnected = false;
+  bool _isSavingSafetyPlan = false;
+
   int _selectedMoodScore = 3;
+  VerseMoment? _currentVerse;
+  SafetyPlanData _safetyPlan = const SafetyPlanData();
+
   final List<MoodCheckin> _moodHistory = [];
   final List<ReflectionEntry> _reflections = [];
   final List<ChatMessage> _messages = [];
-  final List<String> _safetyPlan = const [
-    'Text my sister or closest friend when the day feels too heavy.',
-    'Step outside and name five things I can see before reacting.',
-    'Use a short breath prayer: "Jesus, hold me steady."',
-    'If I feel unsafe, contact local emergency support immediately.',
-  ];
+  final List<PathJourney> _paths = [];
+  final List<CircleGroup> _circles = [];
 
-  bool get hasSession => _user != null;
+  String? _errorMessage;
+
+  bool get hasSession => _token != null && _user != null;
+  bool get isBootstrapping => _isBootstrapping;
+  bool get isCreatingSession => _isCreatingSession;
+  bool get isAuthenticating => _isAuthenticating;
+  bool get isHomeLoading => _isHomeLoading;
+  bool get isPathsLoading => _isPathsLoading;
+  bool get isCirclesLoading => _isCirclesLoading;
+  bool get isCompanionLoading => _isCompanionLoading;
+  bool get isSendingMessage => _isSendingMessage;
+  bool get isTyping => _isTyping;
+  bool get isChatConnected => _isChatConnected;
+  bool get isSavingSafetyPlan => _isSavingSafetyPlan;
+  int get selectedMoodScore => _selectedMoodScore;
   AppUser? get user => _user;
   AppTab get selectedTab => _selectedTab;
   ChatMode get chatMode => _chatMode;
-  bool get isCreatingSession => _isCreatingSession;
-  bool get isSendingMessage => _isSendingMessage;
-  int get selectedMoodScore => _selectedMoodScore;
+  VerseMoment get currentVerse =>
+      _currentVerse ??
+      const VerseMoment(verse: '', reference: '', devotional: '');
+  SafetyPlanData get safetyPlan => _safetyPlan;
   List<MoodCheckin> get moodHistory => List.unmodifiable(_moodHistory);
   List<ReflectionEntry> get reflections => List.unmodifiable(_reflections);
   List<ChatMessage> get messages => List.unmodifiable(_messages);
-  List<String> get safetyPlan => List.unmodifiable(_safetyPlan);
-  VerseMoment get currentVerse => verseMoments[_selectedMoodScore] ?? verseMoments[3]!;
+  List<PathJourney> get paths => List.unmodifiable(_paths);
+  List<CircleGroup> get circles => List.unmodifiable(_circles);
+  String? get errorMessage => _errorMessage;
+
+  Future<void> _initialize() async {
+    _isBootstrapping = true;
+    notifyListeners();
+
+    try {
+      final savedToken = await _sessionStore.readToken().timeout(
+        const Duration(seconds: 5),
+      );
+      if (savedToken == null || savedToken.isEmpty) {
+        return;
+      }
+
+      _token = savedToken;
+      await _loadAuthenticatedData(
+        connectChat: false,
+      ).timeout(const Duration(seconds: 15));
+    } on TimeoutException {
+      await _resetSession();
+      _setError(
+        'Restoring your previous session took too long. '
+        'You can continue anonymously again below.',
+      );
+    } catch (error) {
+      await _resetSession();
+      _setError(_describeError(error));
+    } finally {
+      _isBootstrapping = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> continueAnonymously() async {
     if (_isCreatingSession) {
@@ -281,32 +477,110 @@ class DalaAppController extends ChangeNotifier {
     }
 
     _isCreatingSession = true;
+    _clearError();
     notifyListeners();
 
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-
-    final randomId = 100000 + Random().nextInt(899999);
-    _user = AppUser(
-      name: 'anonymous_$randomId',
-      memberSince: DateTime.now().subtract(const Duration(days: 18)),
-      streakDays: 6,
-      totalMoodEntries: _moodHistory.length,
-      totalConversations: 12,
-      milestoneCount: 4,
-      isAnonymous: true,
-    );
-    _seedChatMessages();
-
-    _isCreatingSession = false;
-    notifyListeners();
+    try {
+      final response = await _apiClient.createAnonymousSession();
+      await _activateSession(response);
+    } catch (error) {
+      await _resetSession();
+      _setError(_describeError(error));
+    } finally {
+      _isCreatingSession = false;
+      notifyListeners();
+    }
   }
 
-  void selectTab(AppTab tab) {
-    if (_selectedTab == tab) {
+  Future<void> register({
+    required String username,
+    String? email,
+    required String password,
+  }) async {
+    if (_isAuthenticating) {
       return;
     }
-    _selectedTab = tab;
+
+    _isAuthenticating = true;
+    _clearError();
     notifyListeners();
+
+    try {
+      final response = await _apiClient.register(
+        username: username.trim(),
+        email: email?.trim().isEmpty == true ? null : email?.trim(),
+        password: password,
+      );
+      await _activateSession(response);
+    } catch (error) {
+      await _resetSession();
+      _setError(_describeError(error));
+    } finally {
+      _isAuthenticating = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> login({
+    required String identifier,
+    required String password,
+  }) async {
+    if (_isAuthenticating) {
+      return;
+    }
+
+    _isAuthenticating = true;
+    _clearError();
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.login(
+        identifier: identifier.trim(),
+        password: password,
+      );
+      await _activateSession(response);
+    } catch (error) {
+      await _resetSession();
+      _setError(_describeError(error));
+    } finally {
+      _isAuthenticating = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> selectTab(AppTab tab) async {
+    if (_selectedTab != tab) {
+      _selectedTab = tab;
+      notifyListeners();
+    }
+
+    switch (tab) {
+      case AppTab.home:
+        if (hasSession && _moodHistory.isEmpty) {
+          await refreshHome();
+        }
+        break;
+      case AppTab.companion:
+        if (hasSession) {
+          await ensureCompanionReady();
+        }
+        break;
+      case AppTab.paths:
+        if (hasSession && _paths.isEmpty) {
+          await loadPaths();
+        }
+        break;
+      case AppTab.circles:
+        if (hasSession && _circles.isEmpty) {
+          await loadCircles();
+        }
+        break;
+      case AppTab.profile:
+        if (hasSession && _user != null && _user!.totalMoodEntries == 0) {
+          await refreshHome();
+        }
+        break;
+    }
   }
 
   void setChatMode(ChatMode mode) {
@@ -317,53 +591,114 @@ class DalaAppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void selectMood(int score) {
-    _selectedMoodScore = score;
-
-    final option = moodOptions.firstWhere(
-      (item) => item.score == score,
-      orElse: () => moodOptions[2],
-    );
-
-    _moodHistory.insert(
-      0,
-      MoodCheckin(
-        score: option.score,
-        label: option.label,
-        createdAt: DateTime.now(),
-      ),
-    );
-
-    if (_user != null) {
-      _user = _user!.copyWith(
-        totalMoodEntries: _moodHistory.length,
-        streakDays: max(_user!.streakDays, 1),
-      );
-    }
-
-    notifyListeners();
-  }
-
-  void addReflection(String note) {
-    if (note.trim().isEmpty) {
+  Future<void> refreshHome() async {
+    if (!hasSession || _token == null) {
       return;
     }
 
-    _reflections.insert(
-      0,
-      ReflectionEntry(
-        note: note.trim(),
-        moodScore: _selectedMoodScore,
-        createdAt: DateTime.now(),
-      ),
-    );
-
+    _isHomeLoading = true;
+    _clearError();
     notifyListeners();
+
+    try {
+      final profileJson = await _apiClient.getProfile(_token!);
+      final moodHistoryJson = await _apiClient.getMoodHistory(
+        _token!,
+        days: 30,
+      );
+
+      _user = AppUser.fromProfileJson(profileJson);
+      _applyMoodHistory(moodHistoryJson);
+      await _loadVerseForScore(_selectedMoodScore);
+      final safetyPlanJson = await _apiClient.getSafetyPlan(_token!);
+      _safetyPlan = SafetyPlanData.fromJson(safetyPlanJson);
+    } catch (error) {
+      _setError(_describeError(error));
+    } finally {
+      _isHomeLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> selectMood(int score) async {
+    if (!hasSession || _token == null) {
+      return;
+    }
+
+    _selectedMoodScore = score;
+    _clearError();
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.logMood(_token!, moodScore: score);
+      _prependMoodEntry(MoodCheckin.fromJson(response));
+      await _loadVerseForScore(score);
+      await _refreshProfileOnly();
+    } catch (error) {
+      _setError(_describeError(error));
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> addReflection(String note) async {
+    if (!hasSession || _token == null || note.trim().isEmpty) {
+      return;
+    }
+
+    _clearError();
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.logMood(
+        _token!,
+        moodScore: _selectedMoodScore,
+        notes: note.trim(),
+      );
+      _prependMoodEntry(MoodCheckin.fromJson(response));
+      _prependReflection(
+        ReflectionEntry.fromMoodJson({...response, 'notes': note.trim()}),
+      );
+      await _refreshProfileOnly();
+    } catch (error) {
+      _setError(_describeError(error));
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> ensureCompanionReady() async {
+    if (!hasSession || _token == null || _isCompanionLoading) {
+      return;
+    }
+
+    _isCompanionLoading = true;
+    _clearError();
+    notifyListeners();
+
+    try {
+      await _ensureConversation();
+      await _connectChatSocket();
+    } catch (error) {
+      _setError(_describeError(error));
+    } finally {
+      _isCompanionLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> sendMessage(String text) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty || _isSendingMessage) {
+    if (trimmed.isEmpty || _token == null) {
+      return;
+    }
+
+    if (!_isChatConnected || _chatSocketClient == null) {
+      await ensureCompanionReady();
+    }
+
+    if (!_isChatConnected || _chatSocketClient == null) {
+      _setError('Chat is not connected yet. Please try again.');
       return;
     }
 
@@ -376,93 +711,474 @@ class DalaAppController extends ChangeNotifier {
       ),
     );
     _isSendingMessage = true;
+    _clearError();
     notifyListeners();
 
-    await Future<void>.delayed(const Duration(milliseconds: 900));
+    try {
+      _chatSocketClient!.sendMessage(text: trimmed, mode: _chatMode.name);
+    } catch (error) {
+      _isSendingMessage = false;
+      _setError(_describeError(error));
+      notifyListeners();
+    }
+  }
 
-    _messages.add(
-      ChatMessage(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        role: 'assistant',
-        text: _buildAssistantReply(trimmed),
-        sentAt: DateTime.now(),
-      ),
-    );
-    _isSendingMessage = false;
+  Future<void> loadPaths() async {
+    if (!hasSession || _token == null || _isPathsLoading) {
+      return;
+    }
+
+    _isPathsLoading = true;
+    _clearError();
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.getPaths(_token!);
+      _paths
+        ..clear()
+        ..addAll(
+          response.whereType<Map<String, dynamic>>().map(PathJourney.fromJson),
+        );
+    } catch (error) {
+      _setError(_describeError(error));
+    } finally {
+      _isPathsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> enrollInPath(String pathId) async {
+    if (!hasSession || _token == null) {
+      return;
+    }
+
+    _clearError();
+    notifyListeners();
+
+    try {
+      await _apiClient.enrollInPath(_token!, pathId);
+      final index = _paths.indexWhere((item) => item.id == pathId);
+      if (index != -1) {
+        final path = _paths[index];
+        _paths[index] = path.copyWith(
+          isEnrolled: true,
+          enrollmentCount: path.enrollmentCount + 1,
+        );
+      }
+    } catch (error) {
+      _setError(_describeError(error));
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadCircles() async {
+    if (!hasSession || _token == null || _isCirclesLoading) {
+      return;
+    }
+
+    _isCirclesLoading = true;
+    _clearError();
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.getCircles(_token!);
+      _circles
+        ..clear()
+        ..addAll(
+          response.whereType<Map<String, dynamic>>().map(CircleGroup.fromJson),
+        );
+    } catch (error) {
+      _setError(_describeError(error));
+    } finally {
+      _isCirclesLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleCircleMembership(String circleId, bool join) async {
+    if (!hasSession || _token == null) {
+      return;
+    }
+
+    _clearError();
+    notifyListeners();
+
+    try {
+      if (join) {
+        await _apiClient.joinCircle(_token!, circleId);
+      } else {
+        await _apiClient.leaveCircle(_token!, circleId);
+      }
+
+      final index = _circles.indexWhere((item) => item.id == circleId);
+      if (index != -1) {
+        final circle = _circles[index];
+        _circles[index] = circle.copyWith(
+          isMember: join,
+          members: max(0, circle.members + (join ? 1 : -1)),
+        );
+      }
+    } catch (error) {
+      _setError(_describeError(error));
+    } finally {
+      notifyListeners();
+    }
+  }
+
+  Future<void> saveSafetyPlan(SafetyPlanData data) async {
+    if (!hasSession || _token == null || _isSavingSafetyPlan) {
+      return;
+    }
+
+    _isSavingSafetyPlan = true;
+    _clearError();
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.updateSafetyPlan(
+        _token!,
+        data.toJson(),
+      );
+      _safetyPlan = SafetyPlanData.fromJson(response);
+    } catch (error) {
+      _setError(_describeError(error));
+    } finally {
+      _isSavingSafetyPlan = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> logout() async {
+    await _resetSession();
     notifyListeners();
   }
 
-  void logout() {
+  @override
+  void dispose() {
+    _chatSocketClient?.disconnect();
+    super.dispose();
+  }
+
+  Future<void> _loadAuthenticatedData({required bool connectChat}) async {
+    if (_token == null) {
+      return;
+    }
+
+    final profileJson = await _apiClient.getProfile(_token!);
+    _user = AppUser.fromProfileJson(profileJson);
+
+    final moodHistoryJson = await _apiClient.getMoodHistory(_token!, days: 30);
+    _applyMoodHistory(moodHistoryJson);
+
+    final safetyPlanJson = await _apiClient.getSafetyPlan(_token!);
+    _safetyPlan = SafetyPlanData.fromJson(safetyPlanJson);
+
+    await Future.wait([
+      loadPaths(),
+      loadCircles(),
+      _loadVerseForScore(_selectedMoodScore),
+    ]);
+
+    if (connectChat) {
+      await ensureCompanionReady();
+    }
+  }
+
+  Future<void> _refreshProfileOnly() async {
+    if (_token == null) {
+      return;
+    }
+    final profileJson = await _apiClient.getProfile(_token!);
+    _user = AppUser.fromProfileJson(profileJson);
+  }
+
+  Future<void> _ensureConversation() async {
+    if (_token == null) {
+      return;
+    }
+
+    if (_conversationId == null) {
+      final conversations = await _apiClient.getConversations(
+        _token!,
+        limit: 1,
+      );
+
+      Map<String, dynamic>? conversation;
+      if (conversations.isNotEmpty) {
+        final first = conversations.first;
+        if (first is Map<String, dynamic> && first['is_active'] == true) {
+          conversation = first;
+        }
+      }
+
+      conversation ??= await _apiClient.createConversation(
+        _token!,
+        mode: _chatMode.name,
+      );
+
+      _conversationId = '${conversation['id']}';
+    }
+
+    final history = await _apiClient.getConversationMessages(
+      _token!,
+      _conversationId!,
+      limit: 100,
+    );
+
+    _messages
+      ..clear()
+      ..addAll(
+        history.whereType<Map<String, dynamic>>().map(ChatMessage.fromJson),
+      );
+
+    if (_messages.isEmpty) {
+      _messages.add(
+        ChatMessage(
+          id: 'dala-welcome',
+          role: 'assistant',
+          text:
+              'Hi, I\'m Dala. I\'m here to listen with gentleness. What feels most present for you today?',
+          sentAt: DateTime.now(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _connectChatSocket() async {
+    if (_token == null || _conversationId == null) {
+      return;
+    }
+
+    final uri = _apiClient.webSocketUri(
+      token: _token!,
+      conversationId: _conversationId!,
+    );
+
+    _chatSocketClient ??= ChatSocketClient(uri: uri);
+    if (_chatSocketClient!.uri != uri) {
+      _chatSocketClient = ChatSocketClient(uri: uri);
+    }
+
+    await _chatSocketClient!.connect(
+      onMessage: _handleSocketMessage,
+      onError: (error) {
+        _isChatConnected = false;
+        _isTyping = false;
+        _isSendingMessage = false;
+        _setError(_describeError(error));
+        notifyListeners();
+      },
+      onDone: () {
+        _isChatConnected = false;
+        _isTyping = false;
+        _isSendingMessage = false;
+        notifyListeners();
+      },
+    );
+  }
+
+  void _handleSocketMessage(Map<String, dynamic> message) {
+    final type = message['type'] as String? ?? '';
+
+    switch (type) {
+      case 'connected':
+        _isChatConnected = true;
+        break;
+      case 'typing':
+        _isTyping = message['status'] == true;
+        break;
+      case 'chunk':
+        final chunk = message['content'] as String? ?? '';
+        if (_streamingMessageId == null) {
+          _streamingMessageId =
+              'stream-${DateTime.now().microsecondsSinceEpoch.toString()}';
+          _messages.add(
+            ChatMessage(
+              id: _streamingMessageId!,
+              role: 'assistant',
+              text: chunk,
+              sentAt: DateTime.now(),
+            ),
+          );
+        } else {
+          final index = _messages.indexWhere(
+            (item) => item.id == _streamingMessageId,
+          );
+          if (index != -1) {
+            final existing = _messages[index];
+            _messages[index] = existing.copyWith(text: existing.text + chunk);
+          }
+        }
+        break;
+      case 'complete':
+        _isTyping = false;
+        _isSendingMessage = false;
+        _streamingMessageId = null;
+        break;
+      case 'error':
+        _isTyping = false;
+        _isSendingMessage = false;
+        _streamingMessageId = null;
+        _setError('${message['message'] ?? 'Chat request failed.'}');
+        break;
+      default:
+        break;
+    }
+
+    notifyListeners();
+  }
+
+  void _applyMoodHistory(Map<String, dynamic> moodHistoryJson) {
+    final entries = (moodHistoryJson['entries'] as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(MoodCheckin.fromJson)
+        .toList();
+
+    _moodHistory
+      ..clear()
+      ..addAll(entries);
+
+    _reflections
+      ..clear()
+      ..addAll(
+        entries
+            .where((entry) => (entry.note ?? '').trim().isNotEmpty)
+            .map(
+              (entry) => ReflectionEntry(
+                id: entry.id,
+                note: entry.note!,
+                moodScore: entry.score,
+                createdAt: entry.createdAt,
+              ),
+            ),
+      );
+
+    if (_moodHistory.isNotEmpty) {
+      _selectedMoodScore = _moodHistory.first.score;
+    }
+  }
+
+  void _prependMoodEntry(MoodCheckin entry) {
+    _moodHistory.insert(0, entry);
+    _selectedMoodScore = entry.score;
+  }
+
+  void _prependReflection(ReflectionEntry reflection) {
+    _reflections.insert(0, reflection);
+  }
+
+  Future<void> _loadVerseForScore(int score) async {
+    try {
+      final response = await _apiClient.getDailyVerse(
+        _moodToVerseCategory(score),
+      );
+      _currentVerse = VerseMoment.fromJson(response);
+    } catch (error) {
+      _setError(_describeError(error));
+    }
+  }
+
+  Future<void> _resetSession() async {
+    await _chatSocketClient?.disconnect();
+    _chatSocketClient = null;
+    await _sessionStore.clear();
+
+    _token = null;
+    _conversationId = null;
+    _streamingMessageId = null;
     _user = null;
     _selectedTab = AppTab.home;
     _chatMode = ChatMode.listen;
     _selectedMoodScore = 3;
-    _seedSessionData();
-    notifyListeners();
-  }
-
-  void _seedSessionData() {
-    _moodHistory
-      ..clear()
-      ..addAll([
-        MoodCheckin(score: 4, label: 'Bright', createdAt: DateTime.now().subtract(const Duration(days: 0))),
-        MoodCheckin(score: 3, label: 'Steady', createdAt: DateTime.now().subtract(const Duration(days: 1))),
-        MoodCheckin(score: 2, label: 'Tender', createdAt: DateTime.now().subtract(const Duration(days: 2))),
-        MoodCheckin(score: 4, label: 'Bright', createdAt: DateTime.now().subtract(const Duration(days: 3))),
-        MoodCheckin(score: 5, label: 'Grateful', createdAt: DateTime.now().subtract(const Duration(days: 4))),
-        MoodCheckin(score: 3, label: 'Steady', createdAt: DateTime.now().subtract(const Duration(days: 5))),
-        MoodCheckin(score: 2, label: 'Tender', createdAt: DateTime.now().subtract(const Duration(days: 6))),
-      ]);
-
-    _reflections
-      ..clear()
-      ..addAll([
-        ReflectionEntry(
-          note: 'I felt more grounded after taking a short walk and praying before dinner.',
-          moodScore: 4,
-          createdAt: DateTime.now().subtract(const Duration(hours: 8)),
-        ),
-        ReflectionEntry(
-          note: 'Today was tender. I still showed up, and that matters.',
-          moodScore: 2,
-          createdAt: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
-        ),
-      ]);
-
+    _currentVerse = null;
+    _safetyPlan = const SafetyPlanData();
+    _moodHistory.clear();
+    _reflections.clear();
     _messages.clear();
+    _paths.clear();
+    _circles.clear();
+    _isChatConnected = false;
+    _isTyping = false;
+    _isSendingMessage = false;
+    _isCompanionLoading = false;
+    _isPathsLoading = false;
+    _isCirclesLoading = false;
+    _isHomeLoading = false;
+    _isSavingSafetyPlan = false;
+    _isAuthenticating = false;
   }
 
-  void _seedChatMessages() {
-    if (_messages.isNotEmpty) {
-      return;
+  Future<void> _activateSession(Map<String, dynamic> response) async {
+    _token = response['access_token'] as String?;
+    if (_token == null || _token!.isEmpty) {
+      throw ApiException('No access token returned from backend.');
     }
 
-    _messages.add(
-      ChatMessage(
-        id: 'welcome-message',
-        role: 'assistant',
-        text: 'Hi, I\'m Dala. I\'m here to listen with gentleness. What feels most present for you today?',
-        sentAt: DateTime.now(),
-      ),
-    );
+    await _sessionStore.writeToken(_token!);
+    await _loadAuthenticatedData(connectChat: false);
   }
 
-  String _buildAssistantReply(String text) {
-    final moodLabel = moodOptions
-        .firstWhere(
-          (item) => item.score == _selectedMoodScore,
-          orElse: () => moodOptions[2],
-        )
-        .label
-        .toLowerCase();
+  void _setError(String message) {
+    _errorMessage = message;
+  }
 
-    switch (_chatMode) {
-      case ChatMode.listen:
-        return 'Thank you for sharing that. It sounds like today feels $moodLabel in a very real way, and you do not have to carry it alone. What part of this feels heaviest right now?';
-      case ChatMode.reflect:
-        return 'I notice there may be a pattern between what you said and how your body has been holding the day. If we slowed it down, what do you think this moment is asking for: rest, honesty, or reassurance?';
-      case ChatMode.ground:
-        return 'Let\'s take one steady step together. Plant both feet on the floor, loosen your shoulders, and take one slow breath in for four counts and out for six. Stay with that for a moment and tell me what shifts, even slightly.';
+  void _clearError() {
+    _errorMessage = null;
+  }
+
+  String _describeError(Object error) {
+    if (error is ApiException) {
+      return error.message;
+    }
+    return '$error';
+  }
+
+  static int _normalizeMoodScore(int score) {
+    if (score <= 5) {
+      return score.clamp(1, 5);
+    }
+    final normalized = (score / 2).round();
+    return normalized.clamp(1, 5);
+  }
+
+  static String _moodToVerseCategory(int score) {
+    switch (score) {
+      case 1:
+        return 'sad';
+      case 2:
+        return 'anxious';
+      case 4:
+        return 'happy';
+      case 5:
+        return 'grateful';
+      default:
+        return 'default';
     }
   }
+}
+
+String _moodLabel(int score) {
+  switch (score) {
+    case 1:
+      return 'Heavy';
+    case 2:
+      return 'Tender';
+    case 4:
+      return 'Bright';
+    case 5:
+      return 'Grateful';
+    default:
+      return 'Steady';
+  }
+}
+
+List<String> _asStringList(dynamic value) {
+  if (value is! List) {
+    return <String>[];
+  }
+  return value
+      .map((item) => '$item')
+      .where((item) => item.trim().isNotEmpty)
+      .toList();
 }

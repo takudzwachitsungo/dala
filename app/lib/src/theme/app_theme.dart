@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color background = Color(0xFFF6F0E8);
-  static const Color surface = Color(0xFFFFFCF7);
-  static const Color ink = Color(0xFF2B211B);
-  static const Color muted = Color(0xFF6F635C);
-  static const Color sage = Color(0xFF4D7A68);
-  static const Color sageSoft = Color(0xFFDDE8E2);
-  static const Color clay = Color(0xFFCA7C5B);
-  static const Color gold = Color(0xFFE8C98A);
-  static const Color rose = Color(0xFFB45D5B);
+  static const Color background = Color(0xFFFAFAF9);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color primaryText = Color(0xFF78716C);
+  static const Color secondaryText = Color(0xFFA8A29E);
+  static const Color subtle = Color(0xFFD6D3D1);
+  static const Color dividerBg = Color(0xFFE7E5E4);
+  static const Color sage = Color(0xFFA3B18A);
+  static const Color sageHover = Color(0xFF8F9E77);
 
   static ThemeData light() {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: sage,
       brightness: Brightness.light,
       primary: sage,
-      secondary: clay,
+      secondary: subtle,
       surface: surface,
-      error: rose,
     );
 
     final base = ThemeData(
@@ -26,15 +24,15 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: background,
       textTheme: Typography.blackMountainView.apply(
-        bodyColor: ink,
-        displayColor: ink,
+        bodyColor: primaryText,
+        displayColor: primaryText,
       ),
     );
 
     return base.copyWith(
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
-        foregroundColor: ink,
+        foregroundColor: primaryText,
         elevation: 0,
         centerTitle: false,
       ),
@@ -59,7 +57,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: ink,
+          foregroundColor: primaryText,
           side: const BorderSide(color: Color(0x26000000)),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           shape: RoundedRectangleBorder(
@@ -68,12 +66,12 @@ class AppTheme {
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surface.withOpacity(0.96),
-        indicatorColor: sageSoft,
+        backgroundColor: surface.withValues(alpha: 0.96),
+        indicatorColor: subtle,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final isSelected = states.contains(WidgetState.selected);
           return TextStyle(
-            color: isSelected ? sage : muted,
+            color: isSelected ? sage : secondaryText,
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
           );
@@ -82,7 +80,7 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surface,
-        hintStyle: const TextStyle(color: muted),
+        hintStyle: const TextStyle(color: secondaryText),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide.none,
@@ -97,9 +95,7 @@ class AppTheme {
         ),
       ),
       chipTheme: base.chipTheme.copyWith(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
         side: BorderSide.none,
       ),
     );

@@ -8,10 +8,7 @@ import 'paths_page.dart';
 import 'profile_page.dart';
 
 class DalaShellPage extends StatelessWidget {
-  const DalaShellPage({
-    super.key,
-    required this.controller,
-  });
+  const DalaShellPage({super.key, required this.controller});
 
   final DalaAppController controller;
 
@@ -26,10 +23,7 @@ class DalaShellPage extends StatelessWidget {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: controller.selectedTab.index,
-        children: pages,
-      ),
+      body: IndexedStack(index: controller.selectedTab.index, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: controller.selectedTab.index,
         onDestinationSelected: (index) {
