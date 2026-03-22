@@ -391,6 +391,7 @@ class DalaAppController extends ChangeNotifier {
 
   bool _isBootstrapping = true;
   bool _isCreatingSession = false;
+  bool _isAuthenticating = false;
   bool _isHomeLoading = false;
   bool _isPathsLoading = false;
   bool _isCirclesLoading = false;
@@ -415,6 +416,7 @@ class DalaAppController extends ChangeNotifier {
   bool get hasSession => _token != null && _user != null;
   bool get isBootstrapping => _isBootstrapping;
   bool get isCreatingSession => _isCreatingSession;
+  bool get isAuthenticating => _isAuthenticating;
   bool get isHomeLoading => _isHomeLoading;
   bool get isPathsLoading => _isPathsLoading;
   bool get isCirclesLoading => _isCirclesLoading;
@@ -480,18 +482,68 @@ class DalaAppController extends ChangeNotifier {
 
     try {
       final response = await _apiClient.createAnonymousSession();
-      _token = response['access_token'] as String?;
-      if (_token == null || _token!.isEmpty) {
-        throw ApiException('No access token returned from backend.');
-      }
-
-      await _sessionStore.writeToken(_token!);
-      await _loadAuthenticatedData(connectChat: false);
+      await _activateSession(response);
     } catch (error) {
       await _resetSession();
       _setError(_describeError(error));
     } finally {
       _isCreatingSession = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> register({
+    required String username,
+    String? email,
+    required String password,
+  }) async {
+    if (_isAuthenticating) {
+      return;
+    }
+
+    _isAuthenticating = true;
+    _clearError();
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.register(
+        username: username.trim(),
+        email: email?.trim().isEmpty == true ? null : email?.trim(),
+        password: password,
+      );
+      await _activateSession(response);
+    } catch (error) {
+      await _resetSession();
+      _setError(_describeError(error));
+    } finally {
+      _isAuthenticating = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> login({
+    required String identifier,
+    required String password,
+  }) async {
+    if (_isAuthenticating) {
+      return;
+    }
+
+    _isAuthenticating = true;
+    _clearError();
+    notifyListeners();
+
+    try {
+      final response = await _apiClient.login(
+        identifier: identifier.trim(),
+        password: password,
+      );
+      await _activateSession(response);
+    } catch (error) {
+      await _resetSession();
+      _setError(_describeError(error));
+    } finally {
+      _isAuthenticating = false;
       notifyListeners();
     }
   }
@@ -1054,6 +1106,17 @@ class DalaAppController extends ChangeNotifier {
     _isCirclesLoading = false;
     _isHomeLoading = false;
     _isSavingSafetyPlan = false;
+    _isAuthenticating = false;
+  }
+
+  Future<void> _activateSession(Map<String, dynamic> response) async {
+    _token = response['access_token'] as String?;
+    if (_token == null || _token!.isEmpty) {
+      throw ApiException('No access token returned from backend.');
+    }
+
+    await _sessionStore.writeToken(_token!);
+    await _loadAuthenticatedData(connectChat: false);
   }
 
   void _setError(String message) {

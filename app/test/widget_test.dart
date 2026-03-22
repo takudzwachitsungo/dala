@@ -12,6 +12,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Welcome to Dala'), findsOneWidget);
-    expect(find.text('Continue anonymously'), findsOneWidget);
+    expect(find.text('Continue Anonymously'), findsOneWidget);
   });
 }

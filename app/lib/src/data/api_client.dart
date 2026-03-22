@@ -35,6 +35,39 @@ class DalaApiClient {
     return _decodeObject(response);
   }
 
+  Future<Map<String, dynamic>> register({
+    required String username,
+    String? email,
+    required String password,
+    bool privacyConsent = true,
+    String? anonymousToken,
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/auth/register',
+      body: {
+        'username': username,
+        'email': email,
+        'password': password,
+        'privacy_consent': privacyConsent,
+        'anonymous_token': anonymousToken,
+      }..removeWhere((key, value) => value == null),
+    );
+    return _decodeObject(response);
+  }
+
+  Future<Map<String, dynamic>> login({
+    required String identifier,
+    required String password,
+  }) async {
+    final response = await _request(
+      method: 'POST',
+      path: '/auth/login',
+      body: {'identifier': identifier, 'password': password},
+    );
+    return _decodeObject(response);
+  }
+
   Future<Map<String, dynamic>> getProfile(String token) async {
     final response = await _request(
       method: 'GET',
